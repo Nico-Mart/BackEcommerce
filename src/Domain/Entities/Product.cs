@@ -28,6 +28,10 @@ public class Product
     [StringLength(255)]
     public string Description { get; set; }
 
+    [Column("imageurl")]
+    [StringLength(512)]
+    public string? ImageUrl {  get; set; }
+
     [Column("created_at", TypeName = "timestamp")]
     public DateTime CreatedAt { get; set; }
 
