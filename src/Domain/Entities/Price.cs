@@ -20,7 +20,8 @@ public class Price
 
     [Column("price")]
     [Required]
-    public int Value { get; set; }
+    [Precision(8, 2)]
+    public decimal Value { get; set; }
 
     [ForeignKey("IdProduct")]
     [InverseProperty("Prices")]
