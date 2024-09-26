@@ -10,7 +10,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<NirvanaContext>(options => options.UseMySql(builder.Configuration.GetConnectionString("LocalMySQL"), ServerVersion.Parse("8.0.39-mysql")));
+builder.Services.AddDbContext<NirvanaContext>(options =>
+{
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("LocalMySQL"),
+        ServerVersion.Parse("8.0.39-mysql"));
+});
 
 builder.Services.AddCors(options =>
 {

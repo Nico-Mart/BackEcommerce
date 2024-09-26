@@ -5,8 +5,8 @@ namespace Infrastructure.Data
 {
     public abstract class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly NirvanaContext _context;
-        public Repository(NirvanaContext context)
+        protected readonly DbContext _context;
+        protected Repository(DbContext context)
         {
             _context = context;
         }
