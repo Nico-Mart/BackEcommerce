@@ -5,7 +5,8 @@ namespace Domain.Interfaces
     {
         Task<T> CreateAsync(T entity, CancellationToken cancellationToken = default);
         Task CreateRangeAsync(ICollection<T> entities, CancellationToken cancellationToken = default);
-        Task<ICollection<T>> GetAllAsync(CancellationToken cancellationToken = default);
+        IQueryable<T> GetAll();
+        Task<ICollection<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
         Task<T?> GetByIdAsync<Tid>(Tid id, CancellationToken cancellationToken = default) where Tid : notnull;
         //Task<ICollection<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
         Task UpdateAsync(T entity, CancellationToken cancellationToken = default);

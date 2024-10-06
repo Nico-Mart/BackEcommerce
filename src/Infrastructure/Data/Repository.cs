@@ -5,8 +5,8 @@ namespace Infrastructure.Data
 {
     public abstract class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly DbContext _context;
-        protected Repository(DbContext context)
+        protected readonly NirvanaContext _context;
+        protected Repository(NirvanaContext context)
         {
             _context = context;
         }
@@ -18,9 +18,13 @@ namespace Infrastructure.Data
         {
             await _context.Set<T>().AddRangeAsync(entities, cancellationToken).ConfigureAwait(false);
         }
-        public virtual async Task<ICollection<T>> GetAllAsync(CancellationToken cancellationToken = default)
+        public virtual IQueryable<T> GetAll()
         {
-            return await _context.Set<T>().ToListAsync(cancellationToken).ConfigureAwait(false);
+            return _context.Set<T>();
+        }
+        public virtual async Task<ICollection<T>> ToListAsync (IQueryable<T> query, CancellationToken cancellationToken = default)
+        {
+            return await query.ToListAsync();
         }
         public virtual async Task<T?> GetByIdAsync<Tid>(Tid id, CancellationToken cancellationToken = default) where Tid : notnull
         {
