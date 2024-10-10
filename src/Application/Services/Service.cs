@@ -61,7 +61,14 @@ namespace Application.Services
             var entities = await _repository.ToListAsync(query);
             return _mapper.Map<ICollection<TReadDto>>(entities);
         }
-        
+        public virtual async Task<TReadDto> GetByIdAsync(int id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            if (entity == null) throw new KeyNotFoundException($"No entity found with the given Id: {id}");
+
+            return _mapper.Map<TReadDto>(entity);
+        }
+
         #region Abstract Methods
         public abstract void Update(TUpdateDto dto);
 
