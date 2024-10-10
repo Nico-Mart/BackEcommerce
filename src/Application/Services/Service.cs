@@ -45,7 +45,6 @@ namespace Application.Services
                 if (options.Filter != null)
                 {
                     if (options.Filter.SearchCriteria?.Count > 0) query = ApplyFilter(query, options.Filter);
-                    if (!string.IsNullOrEmpty(options.Filter.SearchTerm)) query = ApplyRelevanceSearch(query, options.Filter.SearchTerm);
                 }
                 if (options.Sorter != null)
                 {
@@ -154,55 +153,6 @@ namespace Application.Services
 
             //Invoke the OrderBy Method and return the sorted query
             return orderByMethodInfo.Invoke(null, [query, orderByExp]) as IQueryable<TEntity> ?? query;
-        }
-        private IQueryable<TEntity> ApplyRelevanceSearch(IQueryable<TEntity> query, string searchTerm)
-        {
-            // Assuming `TEntity` has properties `Name`, `Description`, etc.
-            // Adjust these properties according to your entity's structure.
-
-            var parameter = Expression.Parameter(typeof(TEntity), "e");
-            var searchValue = Expression.Constant(searchTerm.ToLower());
-
-            // Create conditions for different fields
-            var conditions = new List<Expression>();
-
-            // Example: searching in multiple fields
-            var nameProperty = Expression.Property(parameter, "Name");
-            var descriptionProperty = Expression.Property(parameter, "Description");
-
-            // Score for Name
-            var nameContains = Expression.Call(nameProperty, "Contains", null, searchValue);
-            var nameScore = Expression.Condition(
-                nameContains,
-                Expression.Constant(2), // Give a higher score for name matches
-                Expression.Constant(0)
-            );
-
-            // Score for Description
-            var descriptionContains = Expression.Call(descriptionProperty, "Contains", null, searchValue);
-            var descriptionScore = Expression.Condition(
-                descriptionContains,
-                Expression.Constant(1), // Give a lower score for description matches
-                Expression.Constant(0)
-            );
-
-            // Combine the scores
-            var score = Expression.Add(nameScore, descriptionScore);
-
-            // Create a new projection that includes the score
-            var selector = Expression.Lambda<Func<TEntity, (TEntity Entity, int Score)>>(
-                Expression.New(
-                    typeof(ValueTuple<TEntity, int>).GetConstructor(new[] { typeof(TEntity), typeof(int) }),
-                    parameter,
-                    score
-                ),
-                parameter
-            );
-
-            var scoredQuery = query.Select(selector);
-
-            // Order by the score (higher scores first)
-            return scoredQuery.OrderByDescending(x => x.Score).Select(x => x.Entity);
         }
         #endregion
     }
