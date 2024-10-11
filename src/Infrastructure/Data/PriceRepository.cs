@@ -11,7 +11,7 @@ namespace Infrastructure.Data
         }
         public override async Task<Price?> GetByIdAsync<Tid>(Tid id, CancellationToken cancellationToken = default)
         {
-            return await _context.Prices.Where(p => p.IdProduct == Convert.ToInt32(id)).OrderBy(p => p.CreatedAt).FirstOrDefaultAsync(cancellationToken);
+            return await _context.Prices.Where(p => p.IdProduct == Convert.ToInt32(id)).OrderByDescending(p => p.CreatedAt).FirstOrDefaultAsync(cancellationToken);
         }
     }
 }

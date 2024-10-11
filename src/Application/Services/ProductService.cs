@@ -84,6 +84,15 @@ namespace Application.Services
         {
             var entity = await _productRepository.GetByIdAsync(productDto.Id);
             if (entity == null) throw new KeyNotFoundException($"The given key '{productDto.Id}' does not correspond to a product.");
+            if (productDto.Price != null)
+            {
+                //Create the price entity and assign its related product
+                var price = _mapper.Map<Price>(productDto.Price);
+                price.IdProduct = productDto.Id;
+
+                //Save the price
+                await _priceRepository.CreateAsync(price);
+            }
             entity = _mapper.Map(productDto, entity);
             await _productRepository.UpdateAsync(entity);
         }
