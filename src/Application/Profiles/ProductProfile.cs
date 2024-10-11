@@ -1,4 +1,5 @@
 ﻿using Application.Models.Product;
+using Application.Models.ProductVariant;
 using AutoMapper;
 using Domain.Entities;
 
@@ -12,10 +13,12 @@ namespace Application.Profiles
                 .ForMember(
                     dest => dest.ProductVariants,
                     opt => opt.MapFrom(src => src.ProductVariants));
+
             CreateMap<Product, ReadProductDto>()
                 .ForMember(
                     dest => dest.ProductVariants,
                     opt => opt.MapFrom(src => src.ProductVariants));
+
             CreateMap<UpdateProductDto, Product>()
                 .ForMember(
                     dest => dest.ProductVariants,

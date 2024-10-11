@@ -9,6 +9,7 @@ namespace Application.Profiles
         public PriceProfile()
         {
             CreateMap<PriceDto, Price>();
+            CreateMap<Price, PriceDto>();
         }
     }
 }

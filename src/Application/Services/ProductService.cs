@@ -19,6 +19,7 @@ namespace Application.Services
 
         public override async Task<ReadProductDto> Create(CreateProductDto productDto)
         {
+            
             //Ensure that the product has a price
             if (productDto.Price == null) throw new ArgumentNullException(nameof(productDto.Price), "A price must be provided for a product");
 
@@ -32,9 +33,9 @@ namespace Application.Services
             //Push the price to repository
             await _priceRepository.CreateAsync(price);
             readDto.Price = price.Value;
+            
 
             //Save changes
-            await _repository.SaveChangesAsync();
 
             return readDto;
         }

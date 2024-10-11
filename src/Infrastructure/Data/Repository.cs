@@ -12,7 +12,9 @@ namespace Infrastructure.Data
         }
         public virtual async Task<T> CreateAsync(T entity, CancellationToken cancellationToken = default)
         {
-            return (await _context.Set<T>().AddAsync(entity, cancellationToken).ConfigureAwait(false)).Entity;
+            var createEntry = await _context.Set<T>().AddAsync(entity, cancellationToken).ConfigureAwait(false);
+            await _context.SaveChangesAsync(cancellationToken); 
+            return createEntry.Entity; 
         }
         public virtual async Task CreateRangeAsync(ICollection<T> entities, CancellationToken cancellationToken = default)
         {
