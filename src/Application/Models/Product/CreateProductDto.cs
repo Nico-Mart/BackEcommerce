@@ -16,7 +16,7 @@ namespace Application.Models.Product
         public string Description { get; set; }
         [StringLength(512, ErrorMessage = "ImageUrl cannot be longer than 512 characters")]
         public string? ImageUrl { get; set; }
-        public PriceDto? Price { get; set; }
+        public PriceDto Price { get; set; }
         public ICollection<ProductVariantDto>? ProductVariants { get; set; } = new List<ProductVariantDto>();
     }
 }

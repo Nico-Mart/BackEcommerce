@@ -60,20 +60,19 @@ namespace Application.Services
             var entities = await _repository.ToListAsync(query);
             return _mapper.Map<ICollection<TReadDto>>(entities);
         }
-        public virtual async Task<TReadDto> GetByIdAsync(int id)
+        public virtual async Task<TReadDto> GetByIdAsync<Tid>(Tid id) where Tid : notnull
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) throw new KeyNotFoundException($"No entity found with the given Id: {id}");
-
             return _mapper.Map<TReadDto>(entity);
         }
 
         #region Abstract Methods
-        public abstract void Update(TUpdateDto dto);
+        public abstract Task Update(TUpdateDto dto);
 
         public abstract Task<int> UpdateRange(ICollection<TUpdateDto> dtos);
 
-        public abstract void Delete<Tid>(Tid id) where Tid : notnull;
+        public abstract Task Delete<Tid>(Tid id) where Tid : notnull;
 
         public abstract Task<int> DeleteRange<Tid>(List<Tid> ids) where Tid : notnull;
         #endregion

@@ -19,7 +19,6 @@ namespace Application.Services
 
         public override async Task<ReadProductDto> Create(CreateProductDto productDto)
         {
-            
             //Ensure that the product has a price
             if (productDto.Price == null) throw new ArgumentNullException(nameof(productDto.Price), "A price must be provided for a product");
 
@@ -30,12 +29,9 @@ namespace Application.Services
             var price = _mapper.Map<Price>(productDto.Price);
             price.IdProduct = readDto.Id;
 
-            //Push the price to repository
+            //Save the price
             await _priceRepository.CreateAsync(price);
             readDto.Price = price.Value;
-            
-
-            //Save changes
 
             return readDto;
         }
@@ -61,11 +57,8 @@ namespace Application.Services
                 readDto.Price = price.Value; //Assign price to the read DTO
             }
 
-            //Push the prices to repository
+            //Save the prices to repository
             await _priceRepository.CreateRangeAsync(prices);
-
-            //Save changes
-            await _repository.SaveChangesAsync();
 
             return readProductDtos;
         }
@@ -87,13 +80,12 @@ namespace Application.Services
             return await _productRepository.ToListAsync(query);
         }
 
-        public override async void Update(UpdateProductDto productDto)
+        public override async Task Update(UpdateProductDto productDto)
         {
             var entity = await _productRepository.GetByIdAsync(productDto.Id);
             if (entity == null) throw new KeyNotFoundException($"The given key '{productDto.Id}' does not correspond to a product.");
-            entity = _mapper.Map<Product>(productDto);
+            entity = _mapper.Map(productDto, entity);
             await _productRepository.UpdateAsync(entity);
-            await _repository.SaveChangesAsync();
         }
 
         public override async Task<int> UpdateRange(ICollection<UpdateProductDto> productDtos)
@@ -110,19 +102,18 @@ namespace Application.Services
             foreach (var entity in entities)
             {
                 var productDto = productDtos.FirstOrDefault(dto => dto.Id == entity.Id);
-                if (productDto != null) _mapper.Map<Product>(productDto);
+                if (productDto != null) _mapper.Map(productDto, entity);
             }
 
-            //Save changes
-            return await _repository.SaveChangesAsync();
+            //Save entities
+            return await _repository.UpdateRangeAsync(entities);
         }
 
-        public override async void Delete<Tid>(Tid id)
+        public override async Task Delete<Tid>(Tid id)
         {
             var entity = await _productRepository.GetByIdAsync(id);
             if (entity == null) throw new KeyNotFoundException($"The given key '{id}' does not correspond to a product.");
             await _productRepository.DeleteAsync(entity);
-            await _repository.SaveChangesAsync();
         }
 
         public override async Task<int> DeleteRange<Tid>(List<Tid> ids)
@@ -130,8 +121,7 @@ namespace Application.Services
             var query = _productRepository.GetAllWithPrices().Where(p => ids.Contains((Tid)(Object)p.Id));
             var entities = await _productRepository.ToListAsync(query);
             if (entities == null || !entities.Any()) throw new KeyNotFoundException("No products were found with the provided keys");
-            await _productRepository.DeleteRangeAsync(entities);
-            return await _repository.SaveChangesAsync();
+            return await _productRepository.DeleteRangeAsync(entities);
         }
     }
 }

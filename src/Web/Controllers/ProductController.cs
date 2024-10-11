@@ -17,11 +17,11 @@ namespace Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromBody] Options? options = null)
         {
             try
             {
-                var products = await _productService.GetAll(null);
+                var products = await _productService.GetAll(options);
                 return Ok(products);
             }
             catch (Exception ex)
@@ -52,16 +52,13 @@ namespace Web.Controllers
             //}
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto productDto)
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateProductDto productDto)
         {
             try
             {
-                if (id != productDto.Id)
-                    return BadRequest("Product ID mismatch");
-
-                _productService.Update(productDto);
-                return NoContent(); 
+                await _productService.Update(productDto);
+                return NoContent();
             }
             catch (KeyNotFoundException ex)
             {
@@ -78,7 +75,7 @@ namespace Web.Controllers
         {
             try
             {
-                _productService.Delete(id);
+                await _productService.Delete(id);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)

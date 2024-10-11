@@ -1,5 +1,4 @@
 ﻿using Application.Models.Product;
-using Application.Models.ProductVariant;
 using AutoMapper;
 using Domain.Entities;
 
