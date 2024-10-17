@@ -33,23 +33,23 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateProductDto productDto)
         {
-            //try
-            //{
+            try 
+            {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
                 var product = await _productService.Create(productDto);
 
                 return Ok(product); 
-            //}
-            //catch (ArgumentNullException ex)
-            //{
-            //    return BadRequest(ex.Message); 
-            //}
-            //catch (Exception ex)
-            //{
-            //    return StatusCode(500, $"Internal server error: {ex.Message}");
-            //}
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message); 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         [HttpPut]

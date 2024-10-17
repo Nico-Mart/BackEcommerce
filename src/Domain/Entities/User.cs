@@ -43,4 +43,8 @@ public abstract class User
 
     [Column("updated_at", TypeName = "timestamp")]
     public DateTime UpdatedAt { get; set; }
+
+    [Column("is_active")]
+    [Required]
+    public bool IsActive { get; set; } = false;
 }

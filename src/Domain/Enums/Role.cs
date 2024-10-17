@@ -3,8 +3,8 @@ namespace Domain.Enums
 {
     public enum Role
     {
-        Sysadmin,
-        Admin,
-        Client
+        Sysadmin = 1,
+        Admin = 2,
+        Client = 3
     }
 }
