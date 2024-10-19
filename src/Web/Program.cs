@@ -26,7 +26,7 @@ setupAction.AddSecurityDefinition("NirvanaApiBearerAuth", new OpenApiSecuritySch
     Description = "Acá pegar el token generado al loguearse."
 });
 
-setupAction.AddSecurityRequirement(new OpenApiSecurityRequirement
+    setupAction.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -70,9 +70,6 @@ builder.Services.AddAuthentication("Bearer")
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey))
         };
     });
-Console.WriteLine($"Issuer: {issuer}");
-Console.WriteLine($"Audience: {audience}");
-Console.WriteLine($"SecretKey: {secretKey}");
 
 
 builder.Services.AddCors(options =>
@@ -106,6 +103,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.Configure<AutenticacionServiceOptions>(
     builder.Configuration.GetSection(AutenticacionServiceOptions.AutenticacionService));
 //builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
+builder.Services.AddScoped<IGenerateVerificationTokenService, GenerateVerificationTokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IUserService, UserService>();
 #endregion

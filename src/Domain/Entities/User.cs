@@ -46,5 +46,5 @@ public abstract class User
 
     [Column("is_active")]
     [Required]
-    public bool IsActive { get; set; } = false;
+    public sbyte IsActive { get; set; } = 0;
 }

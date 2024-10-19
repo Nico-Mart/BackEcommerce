@@ -119,10 +119,13 @@ public class NirvanaContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.HasDiscriminator<int>("role")
-                .HasValue<Sysadmin>((int)Role.Sysadmin)
-                .HasValue<Admin>((int)Role.Admin)
-                .HasValue<Client>((int)Role.Client);
+            entity.HasDiscriminator(e => e.Role)
+                .HasValue<Sysadmin>(Role.Sysadmin)
+                .HasValue<Admin>(Role.Admin)
+                .HasValue<Client>(Role.Client);
+
+            entity.Property(e => e.Role)
+                .HasConversion<int>();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt)

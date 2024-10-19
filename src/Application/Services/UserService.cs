@@ -1,28 +1,44 @@
 ﻿using Application.Interfaces;
-using Application.Models.Product;
-using Application.Shared.Classes;
+using Application.Models.User;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Application.Services
 {
     public class UserService : Service<User, CreateUserDto, ReadUserDto, UpdateUserDto>, IUserService
     {
         private readonly IUserRepository _userRepository;
-        public UserService(IUserRepository userRepository, IMapper mapper) : base(userRepository, mapper)
+        private readonly IPasswordHasherService _passwordHasherService;
+        private readonly IGenerateVerificationTokenService _verificationTokenService;
+        public UserService(IUserRepository userRepository, IMapper mapper, 
+                            IPasswordHasherService passwordHasherService, 
+                            IGenerateVerificationTokenService verificationTokenService) : base(userRepository, mapper)
         {
             _userRepository = userRepository;
+            _passwordHasherService = passwordHasherService;
+            _verificationTokenService = verificationTokenService;
         }
 
-        public virtual async Task<ICollection<ReadUserDto>> GetAll(Options? options)
+        public async Task ActivateUser(int userId)
         {
-            var users = await base.GetAll(options);
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with ID '{userId}' not found.");
+            }
 
-            var userDtos = _mapper.Map<ICollection<ReadUserDto>>(users);
-            return userDtos;
+            if (user.IsActive == 1)
+            {
+                throw new InvalidOperationException("User is already verified.");
+            }
 
+            user.IsActive = 1;
+            await _userRepository.UpdateAsync(user);
         }
+
         public override async Task<ReadUserDto> Create(CreateUserDto userDto)
         {
             var existingUser = await _userRepository.GetByEmailAsync(userDto.Email);
@@ -31,14 +47,35 @@ namespace Application.Services
                 throw new ArgumentException($"The email '{userDto.Email}' is already in use.");
             }
 
-            var user = _mapper.Map<User>(userDto);
-            user.CreatedAt = DateTime.UtcNow;
-            user.UpdatedAt = DateTime.UtcNow;
+            userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
+            var createdUser = await base.Create(userDto);
 
-            await _userRepository.CreateAsync(user);
+            return createdUser;
+        }
 
-            var readUserDto = _mapper.Map<ReadUserDto>(user);
-            return readUserDto;
+        public async Task<string> GenerateVerificationToken(int userId)
+        {
+            var userEntity = await _userRepository.GetByIdAsync(userId);
+            if (userEntity == null)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            return _verificationTokenService.GenerateVerificationToken(userEntity); 
+        }
+
+        public override async Task<ICollection<ReadUserDto>> CreateRange(ICollection<CreateUserDto> userDtos)
+        {
+            foreach (var userDto in userDtos)
+            {
+                var existingUser = await _userRepository.GetByEmailAsync(userDto.Email);
+                if (existingUser != null)
+                {
+                    throw new ArgumentException($"The email '{userDto.Email}' is already in use.");
+                }
+            }
+
+            return await base.CreateRange(userDtos);
         }
 
         public override async Task Delete<Tid>(Tid id)
@@ -67,7 +104,6 @@ namespace Application.Services
 
         }
 
-
         public override async Task Update(UpdateUserDto userDto)
         {
             var user = await _userRepository.GetByIdAsync(userDto.Id);
@@ -76,10 +112,13 @@ namespace Application.Services
                 throw new KeyNotFoundException($"The given key '{userDto.Id}' does not correspond to a user.");
             }
 
-            _mapper.Map(userDto, user);
-            user.UpdatedAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(userDto.Password))
+            {
+                userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
+            }
 
-            await _userRepository.UpdateAsync(user);
+              _mapper.Map(userDto, user);
+             await _userRepository.UpdateAsync(user);
         }
 
         public override async Task<int> UpdateRange(ICollection<UpdateUserDto> userDtos)

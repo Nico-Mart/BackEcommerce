@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Models.Product
+namespace Application.Models.User
 {
-    public class UpdateUserDto
+    public class UpdateUserDto : CreateUserDto
     {
         [Required(ErrorMessage = "The product id must be specified")]
         [Key]

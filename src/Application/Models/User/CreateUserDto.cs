@@ -1,7 +1,7 @@
 ﻿using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
-namespace Application.Models.Product
+namespace Application.Models.User
 {
     public class CreateUserDto
     {

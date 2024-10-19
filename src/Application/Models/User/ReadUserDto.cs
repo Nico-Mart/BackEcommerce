@@ -1,6 +1,6 @@
 ﻿using Domain.Enums;
 
-namespace Application.Models.Product
+namespace Application.Models.User
 {
     public class ReadUserDto
     {
@@ -12,6 +12,6 @@ namespace Application.Models.Product
         public string Password { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public bool IsActive { get; set; }
+        public sbyte IsActive { get; set; } = 0;
     }
 }
