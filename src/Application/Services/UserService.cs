@@ -83,7 +83,7 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
-                throw new KeyNotFoundException($"The given key '{id}' does not correspond to a user.");
+                throw new KeyNotFoundException($"The given key '{id}' is not related to a user.");
             }
 
             await _userRepository.DeleteAsync(user);
@@ -109,7 +109,7 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(userDto.Id);
             if (user == null)
             {
-                throw new KeyNotFoundException($"The given key '{userDto.Id}' does not correspond to a user.");
+                throw new KeyNotFoundException($"The given key '{userDto.Id}' is not related to a user.");
             }
 
             if (!string.IsNullOrEmpty(userDto.Password))

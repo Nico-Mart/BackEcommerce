@@ -19,12 +19,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(setupAction =>
 {
-setupAction.AddSecurityDefinition("NirvanaApiBearerAuth", new OpenApiSecurityScheme() 
-{
-    Type = SecuritySchemeType.Http,
-    Scheme = "Bearer",
-    Description = "Acá pegar el token generado al loguearse."
-});
+    setupAction.AddSecurityDefinition("NirvanaApiBearerAuth", new OpenApiSecurityScheme()
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        Description = "Acá pegar el token generado al loguearse."
+    });
 
     setupAction.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -34,7 +34,7 @@ setupAction.AddSecurityDefinition("NirvanaApiBearerAuth", new OpenApiSecuritySch
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "NirvanaApiBearerAuth" } 
+                    Id = "NirvanaApiBearerAuth" }
                 }, new List<string>() }
     });
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -61,7 +61,7 @@ builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new()
-        {         
+        {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
@@ -102,11 +102,11 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 #region Services
 builder.Services.Configure<AutenticacionServiceOptions>(
     builder.Configuration.GetSection(AutenticacionServiceOptions.AutenticacionService));
-//builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IGenerateVerificationTokenService, GenerateVerificationTokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUserService, UserService>();
 #endregion
 

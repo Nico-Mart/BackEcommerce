@@ -28,15 +28,13 @@ namespace Application.Services
             entity = await _repository.CreateAsync(entity);
             return _mapper.Map<TReadDto>(entity);
         }
-
         public virtual async Task<ICollection<TReadDto>> CreateRange(ICollection<TCreateDto> dtos)
         {
             var entities = _mapper.Map<ICollection<TEntity>>(dtos);
             await _repository.CreateRangeAsync(entities);
             return _mapper.Map<ICollection<TReadDto>>(entities);
         }
-
-        public virtual async Task<ICollection<TReadDto>> GetAll(Options? options)
+        public virtual async Task<ICollection<TReadDto>> GetAll(Options? options = null)
         {
             var query = _repository.GetAll();
 

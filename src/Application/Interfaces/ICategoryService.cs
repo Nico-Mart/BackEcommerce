@@ -1,14 +1,8 @@
-﻿using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Models.ProductMisc;
 
 namespace Application.Interfaces
 {
-    public interface ICategoryService
+    public interface ICategoryService : IService<CreateCategoryDto, CategoryDto, CategoryDto>
     {
-
     }
 }

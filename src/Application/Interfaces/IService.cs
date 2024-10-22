@@ -9,7 +9,7 @@ namespace Application.Interfaces
     {
         Task<TReadDto> Create(TCreateDto dto);
         Task<ICollection<TReadDto>> CreateRange(ICollection<TCreateDto> dtos);
-        Task<ICollection<TReadDto>> GetAll(Options? options);
+        Task<ICollection<TReadDto>> GetAll(Options? options = null);
         Task<TReadDto> GetByIdAsync<Tid>(Tid id) where Tid : notnull;
         Task Update(TUpdateDto dto);
         Task<int> UpdateRange(ICollection<TUpdateDto> dtos);

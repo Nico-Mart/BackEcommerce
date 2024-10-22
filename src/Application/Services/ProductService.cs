@@ -9,10 +9,17 @@ namespace Application.Services
 {
     public class ProductService : Service<Product, CreateProductDto, ReadProductDto, UpdateProductDto>, IProductService
     {
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IProductRepository _productRepository;
         private readonly IPriceRepository _priceRepository;
-        public ProductService(IProductRepository productRepository, IPriceRepository priceRepository, IMapper mapper) : base(productRepository, mapper)
+        public ProductService(
+            ICategoryRepository categoryRepository,
+            IProductRepository productRepository,
+            IPriceRepository priceRepository,
+            IMapper mapper
+        ) : base(productRepository, mapper)
         {
+            _categoryRepository = categoryRepository;
             _productRepository = productRepository;
             _priceRepository = priceRepository;
         }
@@ -21,6 +28,10 @@ namespace Application.Services
         {
             //Ensure that the product has a price
             if (productDto.Price == null) throw new ArgumentNullException(nameof(productDto.Price), "A price must be provided for a product");
+
+            //Ensure that the category exists
+            bool categoryExists = await _categoryRepository.GetByIdAsync(productDto.IdCategory) != null;
+            if (!categoryExists) throw new ArgumentException("Invalid category", nameof(productDto.IdCategory));
 
             //Process the DTO
             var readDto = await base.Create(productDto);
@@ -38,10 +49,12 @@ namespace Application.Services
 
         public override async Task<ICollection<ReadProductDto>> CreateRange(ICollection<CreateProductDto> productDtos)
         {
-            //Ensure that each product has a price
+            //Ensure that each product has a price and a valid category
             foreach (var dto in productDtos)
             {
                 if (dto.Price == null) throw new ArgumentNullException(nameof(dto.Price), "A price must be provided for each product.");
+                bool categoryExists = await _categoryRepository.GetByIdAsync(dto.IdCategory) != null;
+                if (!categoryExists) throw new ArgumentException("Some products have an innvalid category", nameof(dto.IdCategory));
             }
 
             //Process the DTOs
@@ -83,7 +96,7 @@ namespace Application.Services
         public override async Task Update(UpdateProductDto productDto)
         {
             var entity = await _productRepository.GetByIdAsync(productDto.Id);
-            if (entity == null) throw new KeyNotFoundException($"The given key '{productDto.Id}' does not correspond to a product.");
+            if (entity == null) throw new KeyNotFoundException($"The given key '{productDto.Id}' is not related to a product.");
             if (productDto.Price != null)
             {
                 //Create the price entity and assign its related product
@@ -121,7 +134,7 @@ namespace Application.Services
         public override async Task Delete<Tid>(Tid id)
         {
             var entity = await _productRepository.GetByIdAsync(id);
-            if (entity == null) throw new KeyNotFoundException($"The given key '{id}' does not correspond to a product.");
+            if (entity == null) throw new KeyNotFoundException($"The given key '{id}' is not related to a product.");
             await _productRepository.DeleteAsync(entity);
         }
 

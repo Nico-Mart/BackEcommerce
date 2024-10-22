@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Application.Models.Product
+namespace Application.Models.ProductMisc
 {
-    public class PriceDto
+    public class CreatePriceDto
     {
         public DateTime? CreatedAt { get; set; }
         [Required(ErrorMessage = "A price value is required")]

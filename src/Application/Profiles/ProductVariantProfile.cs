@@ -8,8 +8,8 @@ namespace Application.Profiles
     {
         public ProductVariantProfile()
         {
-            CreateMap<ProductVariantDto, ProductVariant>();
-            CreateMap<ProductVariant, ReadProductVariantDto>();
+            CreateMap<CreateProductVariantDto, ProductVariant>();
+            CreateMap<ProductVariant, ProductVariantDto>();
         }
     }
 }
