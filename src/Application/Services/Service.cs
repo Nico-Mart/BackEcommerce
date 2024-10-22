@@ -34,7 +34,7 @@ namespace Application.Services
             await _repository.CreateRangeAsync(entities);
             return _mapper.Map<ICollection<TReadDto>>(entities);
         }
-        public virtual async Task<ICollection<TReadDto>> GetAll(Options? options = null)
+        public virtual async Task<PagedResult<TReadDto>> GetAll(Options? options = null)
         {
             var query = _repository.GetAll();
 
@@ -48,15 +48,20 @@ namespace Application.Services
                 {
                     query = ApplySorter(query, options.Sorter);
                 }
-                if (options.Paginator != null)
-                {
-                    query = query.Skip((options.Paginator.Page - 1) * options.Paginator.PageSize)
-                                 .Take(options.Paginator.PageSize);
-                }
+            }
+
+            var rowCount = query.Count();
+            var pageCount = (int)Math.Ceiling(rowCount / (double)(options?.Paginator?.PageSize ?? 1));
+
+            if (options?.Paginator != null)
+            {
+                query = query.Skip((options.Paginator.Page - 1) * options.Paginator.PageSize)
+                             .Take(options.Paginator.PageSize);
             }
 
             var entities = await _repository.ToListAsync(query);
-            return _mapper.Map<ICollection<TReadDto>>(entities);
+            var data = _mapper.Map<ICollection<TReadDto>>(entities);
+            return new PagedResult<TReadDto>(data, pageCount);
         }
         public virtual async Task<TReadDto> GetByIdAsync<Tid>(Tid id) where Tid : notnull
         {

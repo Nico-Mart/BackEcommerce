@@ -76,10 +76,10 @@ namespace Application.Services
             return readProductDtos;
         }
 
-        public override async Task<ICollection<ReadProductDto>> GetAll(Options? options)
+        public override async Task<PagedResult<ReadProductDto>> GetAll(Options? options)
         {
             var list = await base.GetAll(options);
-            foreach (var item in list)
+            foreach (var item in list.Data)
             {
                 var price = await _priceRepository.GetByIdAsync(item.Id);
                 if (price != null) item.Price = price.Value;
