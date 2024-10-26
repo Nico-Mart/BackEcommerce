@@ -1,11 +1,8 @@
 ﻿using Application.Interfaces;
-<<<<<<< Updated upstream
 using Application.Models.ProductMisc;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
-=======
->>>>>>> Stashed changes
 
 namespace Application.Services
 {

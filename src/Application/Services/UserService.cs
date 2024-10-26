@@ -58,7 +58,7 @@ namespace Application.Services
             }
 
             var userEntity = _mapper.Map<User>(userDto);
-            userEntity.IsActive = true;
+            userEntity.IsActive = 1;
             await _userRepository.CreateAsync(userEntity);
 
             _temporaryUserCacheService.RemoveTemporaryUser(token);
@@ -95,11 +95,7 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
-<<<<<<< Updated upstream
-                throw new KeyNotFoundException($"The given key '{id}' is not related to a user.");
-=======
                 throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningun usuario.");
->>>>>>> Stashed changes
             }
 
             await _userRepository.DeleteAsync(user);
@@ -125,11 +121,7 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(userDto.Id);
             if (user == null)
             {
-<<<<<<< Updated upstream
-                throw new KeyNotFoundException($"The given key '{userDto.Id}' is not related to a user.");
-=======
                 throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningun usuario.");
->>>>>>> Stashed changes
             }
 
             if (!string.IsNullOrEmpty(userDto.Password))
