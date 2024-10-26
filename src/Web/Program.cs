@@ -92,6 +92,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("All", policy => policy.RequireClaim(ClaimTypes.Role, "Admin", "Sysadmin", "Client"));
 });
 
+builder.Services.AddMemoryCache();
+
 #region Repositories
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IPriceRepository, PriceRepository>();
@@ -108,6 +110,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITemporaryUserCacheService, TemporaryUserCacheService>();
 #endregion
 
 

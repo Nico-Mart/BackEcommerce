@@ -1,51 +1,64 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mail;
+﻿using System.Net.Mail;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Application.Interfaces;
 using Microsoft.Extensions.Configuration;
+using static Application.Models.Email.ProjectEnum;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace Application.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly string _smtpServer;
-        private readonly int _smtpPort;
-        private readonly string _smtpUsername;
-        private readonly string _smtpPassword;
-        private readonly string _fromEmail;
-
+        private readonly IConfiguration _configuration;
+        private readonly string _host;
+        private readonly int _port;
+        private readonly string _username;
+        private readonly string _password;
+        private readonly string _senderEmail;
+        private readonly string _senderName;
         public EmailService(IConfiguration configuration)
         {
-            _smtpServer = configuration["EmailSettings:SmtpServer"];
-            _smtpPort = int.Parse(configuration["EmailSettings:SmtpPort"]);
-            _smtpUsername = configuration["EmailSettings:SmtpUsername"];
-            _smtpPassword = configuration["EmailSettings:SmtpPassword"];
-            _fromEmail = configuration["EmailSettings:FromEmail"];
+            _configuration = configuration;
+            _host = _configuration["SmtpSettings:Host"];
+            _port = int.Parse(_configuration["SmtpSettings:Port"]);
+            _username = _configuration["SmtpSettings:Username"];
+            _password = _configuration["SmtpSettings:Password"];
+            _senderEmail = _configuration["SmtpSettings:SenderEmail"];
+            _senderName = _configuration["SmtpSettings:SenderName"];
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string message)
+        public async Task<bool> SendEmailAsync(string toEmail, string subject, string body)
         {
-            using (var client = new SmtpClient(_smtpServer, _smtpPort))
+            try
             {
-                client.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
-                client.EnableSsl = true;
+                var smtpClient = new SmtpClient(_host)
+                {
+                    Port = _port,
+                    Credentials = new NetworkCredential(_username, _password),
+                    EnableSsl = true
+                };
 
                 var mailMessage = new MailMessage
                 {
-                    From = new MailAddress(_fromEmail),
+                    From = new MailAddress(_senderEmail, _senderName),
                     Subject = subject,
-                    Body = message,
-                    IsBodyHtml = true 
+                    Body = body,
+                    IsBodyHtml = true
                 };
 
                 mailMessage.To.Add(toEmail);
 
-                await client.SendMailAsync(mailMessage);
+                await smtpClient.SendMailAsync(mailMessage);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+
+                return false;
             }
         }
+        
     }
 }

@@ -12,40 +12,55 @@ namespace Application.Services
     public class GenerateVerificationTokenService : IGenerateVerificationTokenService
     {
         private readonly IEmailService _emailService;
-        private readonly string _baseUrl; 
+        private readonly string _baseUrl;
 
         public GenerateVerificationTokenService(IEmailService emailService, IConfiguration configuration)
         {
             _emailService = emailService;
-            _baseUrl = configuration["Verification:BaseUrl"]; 
+            _baseUrl = configuration["Verification:BaseUrl"];
         }
-        public string GenerateVerificationToken(User user)
+        public string GenerateVerificationToken(string email)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("thisisthesecretforgeneratingakey(mustbeatleast32bitlong)"); 
+            var key = Encoding.ASCII.GetBytes("thisisthesecretforgeneratingakey(mustbeatleast32bitlong)");
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim("IsActive", user.IsActive.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(15), 
+                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-        public async Task SendVerificationEmail(string email, string token)
-        {
-            var verificationLink = $"{_baseUrl}/verify?token={token}";
-            var subject = "Verify your account";
-            var body = $"<p>Please verify your account by clicking on the link below:</p><a href='{verificationLink}'>Verify Account</a>";
 
-            await _emailService.SendEmailAsync(email, subject, body);
+        public string ValidateVerificationToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes("thisisthesecretforgeneratingakey(mustbeatleast32bitlong)");
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                }, out SecurityToken validatedToken);
+
+                var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+                return emailClaim?.Value ?? throw new ArgumentException("Invalid token: email not found");
+            }
+            catch
+            {
+                throw new SecurityTokenException("Invalid token");
+            }
         }
+
+
 
     }
 }

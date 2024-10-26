@@ -1,12 +1,15 @@
 ﻿using Application.Interfaces;
 using Application.Models.User;
 using Application.Shared.Classes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    //[Authorize]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -33,29 +36,55 @@ namespace Web.Controllers
             return Ok(user);
         }
 
+        //[Authorize(Roles = "sysadmin")]
         [HttpPost("create-and-verify")]
         public async Task<ActionResult> CreateAndVerify(CreateUserDto userDto)
         {
-            var createdUser = await _userService.Create(userDto);
-
-            var token = await _userService.GenerateVerificationToken(createdUser.Id);
-
-            return Ok(new { Token = token });
-        }
-        [HttpPost("create-range-and-verify")]
-        public async Task<ActionResult> CreateRangeAndVerify(ICollection<CreateUserDto> userDtos)
-        {
-            var createdUsers = await _userService.CreateRange(userDtos);
-
-            var tokens = new List<string>();
-            foreach (var user in createdUsers)
+            try
             {
-                var token = await _userService.GenerateVerificationToken(user.Id);
-                tokens.Add(token);
+                var createdUser = await _userService.Create(userDto);
+                return Ok("Se ha enviado un correo de verificación. Por favor revisa tu bandeja de entrada.");
             }
-
-            return Ok(new { Tokens = tokens });
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
+        [HttpGet("verify")]
+        public async Task<ActionResult> ActivateUser([FromQuery] string token)
+        {
+            try
+            {
+                await _userService.ActivateAccount(token);
+                return Ok("Cuenta verificada y creada exitosamente.");
+            }
+            catch (SecurityTokenException ex)
+            {
+                return BadRequest($"Falló la verificación: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ocurrió un error: {ex.Message}");
+            }
+        }
+
+
+
+        //[HttpPost("create-range-and-verify")]
+        //public async Task<ActionResult> CreateRangeAndVerify(ICollection<CreateUserDto> userDtos)
+        //{
+        //    var createdUsers = await _userService.CreateRange(userDtos);
+
+        //    var tokens = new List<string>();
+        //    foreach (var user in createdUsers)
+        //    {
+        //        var token = await _userService.GenerateVerificationToken(user.Email);
+        //        tokens.Add(token);
+        //    }
+
+        //    return Ok(new { Tokens = tokens });
+        //}
         [HttpPut]
         public async Task<ActionResult> Update(UpdateUserDto userDto)
         {

@@ -9,7 +9,8 @@ namespace Application.Interfaces
 {
     public interface IGenerateVerificationTokenService
     {
-        string GenerateVerificationToken(User user);
-        Task SendVerificationEmail(string email, string token);
+        string GenerateVerificationToken(string email);
+
+        string ValidateVerificationToken(string token);
     }
 }

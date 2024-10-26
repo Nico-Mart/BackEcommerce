@@ -4,7 +4,7 @@ namespace Application.Interfaces
 {
     public interface IUserService : IService<CreateUserDto,ReadUserDto,UpdateUserDto>
     {
-        Task ActivateUser(int userId);
-        Task<string> GenerateVerificationToken(int userId);
+        Task ActivateAccount(string token);
+        Task<string> GenerateVerificationToken(string email);
     }
 }

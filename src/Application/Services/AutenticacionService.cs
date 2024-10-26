@@ -27,12 +27,12 @@ namespace Application.Services
             if (string.IsNullOrEmpty(authenticationRequest.Email) || string.IsNullOrEmpty(authenticationRequest.Password))
                 return null;
 
-            var user = await _userRepository.GetByEmailAsync(authenticationRequest.Email); // Espera a la tarea
+            var user = await _userRepository.GetByEmailAsync(authenticationRequest.Email);
 
             if (user == null) return null;
 
             if (user.Password == authenticationRequest.Password &&
-                (user.Role.ToString() == authenticationRequest.Role || authenticationRequest.Role == "SysAdmin"))
+                (user.Role.ToString() == "Admin" || user.Role.ToString() == "SysAdmin" || user.Role.ToString() == "Client"))
             {
                 return user;
             }
@@ -43,7 +43,7 @@ namespace Application.Services
 
         public async Task<string> AutenticarAsync(AuthenticationRequest authenticationRequest)
         {
-            var user = await ValidateUserAsync(authenticationRequest); // Espera a la tarea
+            var user = await ValidateUserAsync(authenticationRequest);
 
             if (user == null)
             {
@@ -59,7 +59,7 @@ namespace Application.Services
             new Claim("given_name", user.FirstName),
             new Claim("family_name", user.LastName),
             new Claim("Email", user.Email),
-            new Claim("role", authenticationRequest.Role.ToString())
+            new Claim("role", user.Role.ToString())
         };
 
             var jwtSecurityToken = new JwtSecurityToken(

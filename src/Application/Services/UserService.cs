@@ -3,8 +3,7 @@ using Application.Models.User;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
-using System.Security.Cryptography;
-using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Application.Services
 {
@@ -13,55 +12,68 @@ namespace Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasherService _passwordHasherService;
         private readonly IGenerateVerificationTokenService _verificationTokenService;
+        private readonly IEmailService _emailService;
+        private readonly ITemporaryUserCacheService _temporaryUserCacheService;
         public UserService(IUserRepository userRepository, IMapper mapper, 
                             IPasswordHasherService passwordHasherService, 
-                            IGenerateVerificationTokenService verificationTokenService) : base(userRepository, mapper)
+                            IGenerateVerificationTokenService verificationTokenService, 
+                            IEmailService emailService,
+                            ITemporaryUserCacheService temporaryUserCacheService
+            ) : base(userRepository, mapper)
         {
             _userRepository = userRepository;
             _passwordHasherService = passwordHasherService;
             _verificationTokenService = verificationTokenService;
-        }
-
-        public async Task ActivateUser(int userId)
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new KeyNotFoundException($"User with ID '{userId}' not found.");
-            }
-
-            if (user.IsActive == 1)
-            {
-                throw new InvalidOperationException("User is already verified.");
-            }
-
-            user.IsActive = 1;
-            await _userRepository.UpdateAsync(user);
+            _emailService = emailService;
+            _temporaryUserCacheService = temporaryUserCacheService;
         }
 
         public override async Task<ReadUserDto> Create(CreateUserDto userDto)
         {
-            var existingUser = await _userRepository.GetByEmailAsync(userDto.Email);
-            if (existingUser != null)
+            if (_temporaryUserCacheService.CheckIfUserExists(userDto.Email))
             {
-                throw new ArgumentException($"The email '{userDto.Email}' is already in use.");
+                throw new ArgumentException($"El Email '{userDto.Email}' esta en uso.");
             }
 
             userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
-            var createdUser = await base.Create(userDto);
 
-            return createdUser;
+            var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
+
+            _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
+
+            await _emailService.SendEmailAsync(userDto.Email, "Verifique su Cuenta",
+                "<h3>Verifique su Cuenta</h3>" +
+                "<p>Por favor verifique su cuenta haciendo clic en el enlace a continuación:</p>" +
+                $"<a href='https://localhost:7037/api/User/verify?token={token}' style='color:#007BFF; text-decoration:none;'>Verificar cuenta</a>");
+
+            return new ReadUserDto { Email = userDto.Email, FirstName = userDto.FirstName };
         }
-
-        public async Task<string> GenerateVerificationToken(int userId)
+        public async Task ActivateAccount(string token)
         {
-            var userEntity = await _userRepository.GetByIdAsync(userId);
-            if (userEntity == null)
+            var userDto = _temporaryUserCacheService.GetTemporaryUserByToken(token);
+
+            if (userDto == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new SecurityTokenException("Token invalido o expirado.");
             }
 
-            return _verificationTokenService.GenerateVerificationToken(userEntity); 
+            var userEntity = _mapper.Map<User>(userDto);
+            userEntity.IsActive = true;
+            await _userRepository.CreateAsync(userEntity);
+
+            _temporaryUserCacheService.RemoveTemporaryUser(token);
+        }
+
+
+        public async Task<string> GenerateVerificationToken(string email)
+        {
+            var userEntity = await _userRepository.GetByEmailAsync(email);
+            if (userEntity == null)
+            {
+                throw new KeyNotFoundException("Usuario no encontrado");
+            }
+
+            return _verificationTokenService.GenerateVerificationToken(userEntity.Email); 
         }
 
         public override async Task<ICollection<ReadUserDto>> CreateRange(ICollection<CreateUserDto> userDtos)
@@ -71,7 +83,7 @@ namespace Application.Services
                 var existingUser = await _userRepository.GetByEmailAsync(userDto.Email);
                 if (existingUser != null)
                 {
-                    throw new ArgumentException($"The email '{userDto.Email}' is already in use.");
+                    throw new ArgumentException($"El Email '{userDto.Email}' esta en uso.");
                 }
             }
 
@@ -83,7 +95,11 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
+<<<<<<< Updated upstream
                 throw new KeyNotFoundException($"The given key '{id}' is not related to a user.");
+=======
+                throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningun usuario.");
+>>>>>>> Stashed changes
             }
 
             await _userRepository.DeleteAsync(user);
@@ -97,7 +113,7 @@ namespace Application.Services
 
             if (users == null || !users.Any())
             {
-                throw new KeyNotFoundException($"No users were found with the provided keys: {string.Join(", ", ids)}.");
+                throw new KeyNotFoundException($"No se encontraron usuarios con las claves proporcionadas: {string.Join(", ", ids)}.");
             }
 
             return await _userRepository.DeleteRangeAsync(users);
@@ -109,7 +125,11 @@ namespace Application.Services
             var user = await _userRepository.GetByIdAsync(userDto.Id);
             if (user == null)
             {
+<<<<<<< Updated upstream
                 throw new KeyNotFoundException($"The given key '{userDto.Id}' is not related to a user.");
+=======
+                throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningun usuario.");
+>>>>>>> Stashed changes
             }
 
             if (!string.IsNullOrEmpty(userDto.Password))
@@ -130,7 +150,7 @@ namespace Application.Services
 
             if (users == null || !users.Any())
             {
-                throw new KeyNotFoundException("No users were found with the provided keys.");
+                throw new KeyNotFoundException($"No se encontraron usuarios con las claves proporcionadas. {string.Join(", ", ids)}.");
             }
 
             foreach (var user in users)

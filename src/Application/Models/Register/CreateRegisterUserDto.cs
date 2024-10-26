@@ -1,9 +1,8 @@
-﻿using Domain.Enums;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace Application.Models.User
+namespace Application.Models.Register
 {
-    public class CreateUserDto
+    public class CreateRegisterUserDto
     {
         [Required(ErrorMessage = "First name is required")]
         [StringLength(64, ErrorMessage = "First name cannot be longer than 64 characters")]
@@ -20,13 +19,6 @@ namespace Application.Models.User
 
         [Required(ErrorMessage = "Password is required")]
         [StringLength(255, ErrorMessage = "Password cannot be longer than 255 characters")]
-        [DataType(DataType.Password)]
         public string Password { get; set; }
-
-        [Required(ErrorMessage = "Role is required")]
-        public Role Role { get; set; }
-
-        [Required(ErrorMessage = "Active status must be specified")]
-        public sbyte IsActive { get; set; }
     }
 }
