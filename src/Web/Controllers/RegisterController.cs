@@ -1,7 +1,9 @@
 ﻿using Application.Interfaces;
+using Application.Models.Password;
 using Application.Models.Register;
 using Application.Models.User;
 using AutoMapper;
+using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +29,8 @@ namespace Web.Controllers
             try
             {
                 var userDto = _mapper.Map<CreateUserDto>(registerDto);
+                userDto.Role = Role.Client;
+
                 var createdUser = await _userService.Create(userDto);
                 return Ok("Se ha enviado un correo de verificación. Por favor revisa tu bandeja de entrada.");
             }
@@ -35,6 +39,38 @@ namespace Web.Controllers
                 return BadRequest($"Error durante el registro: {ex.Message}");
             }
         }
+
+        [HttpPost("resetPassword-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPasswordEmail([FromBody] EmailResetPassword emailReset)
+        {
+            try
+            {
+                await _userService.RequestPasswordReset(emailReset.Email);
+                return Ok("Se ha enviado un correo de verificación. Por favor revisa tu bandeja de entrada.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error durante el restablecimiento de contraseña: {ex.Message}");
+            }
+        }
+
+        [HttpPost("resetPassword")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        {
+            try
+            {
+                await _userService.ResetPassword(resetPasswordDto);
+                return Ok("Contraseña reseteada con éxito.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error durante el restablecimiento de contraseña: {ex.Message}");
+            }
+        }
+
+
         [HttpPut]
         public async Task<ActionResult> Update(UpdateUserDto userDto)
         {
@@ -47,5 +83,7 @@ namespace Web.Controllers
             await _userService.Delete(id);
             return NoContent();
         }
+
     }
+
 }

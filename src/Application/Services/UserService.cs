@@ -1,9 +1,11 @@
 ﻿using Application.Interfaces;
+using Application.Models.Password;
 using Application.Models.User;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel.DataAnnotations;
 
 namespace Application.Services
 {
@@ -14,9 +16,9 @@ namespace Application.Services
         private readonly IGenerateVerificationTokenService _verificationTokenService;
         private readonly IEmailService _emailService;
         private readonly ITemporaryUserCacheService _temporaryUserCacheService;
-        public UserService(IUserRepository userRepository, IMapper mapper, 
-                            IPasswordHasherService passwordHasherService, 
-                            IGenerateVerificationTokenService verificationTokenService, 
+        public UserService(IUserRepository userRepository, IMapper mapper,
+                            IPasswordHasherService passwordHasherService,
+                            IGenerateVerificationTokenService verificationTokenService,
                             IEmailService emailService,
                             ITemporaryUserCacheService temporaryUserCacheService
             ) : base(userRepository, mapper)
@@ -32,13 +34,19 @@ namespace Application.Services
         {
             if (_temporaryUserCacheService.CheckIfUserExists(userDto.Email))
             {
-                throw new ArgumentException($"El Email '{userDto.Email}' esta en uso.");
+                throw new ArgumentException($"El Email '{userDto.Email}' está en uso.");
+            }
+
+            var passwordValidation = new PasswordValidationAttribute();
+            var validationResult = passwordValidation.GetValidationResult(userDto.Password, new ValidationContext(userDto));
+
+            if (validationResult != ValidationResult.Success)
+            {
+                throw new ArgumentException(validationResult.ErrorMessage);
             }
 
             userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
-
             var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
-
             _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
 
             await _emailService.SendEmailAsync(userDto.Email, "Verifique su Cuenta",
@@ -48,32 +56,67 @@ namespace Application.Services
 
             return new ReadUserDto { Email = userDto.Email, FirstName = userDto.FirstName };
         }
+
         public async Task ActivateAccount(string token)
         {
-            var userDto = _temporaryUserCacheService.GetTemporaryUserByToken(token);
-
-            if (userDto == null)
-            {
-                throw new SecurityTokenException("Token invalido o expirado.");
-            }
-
+            var userDto = _temporaryUserCacheService.GetTemporaryUserByToken(token) ?? throw new SecurityTokenException("Token invalido o expirado.");
             var userEntity = _mapper.Map<User>(userDto);
             userEntity.IsActive = 1;
             await _userRepository.CreateAsync(userEntity);
 
             _temporaryUserCacheService.RemoveTemporaryUser(token);
         }
+        public async Task RequestPasswordReset(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email) ?? throw new ArgumentException("Email not found");
+            var token = _verificationTokenService.GenerateVerificationToken(email);
+            var resetLink = $"https://localhost:7037/api/Register/resetPassword?token={token}";
+            var body = $"Click here to reset your password: <a href='{resetLink}'>Reset Password</a>";
+            await _emailService.SendEmailAsync(email, "Password Reset Request", body);
+
+            var userDto = new CreateUserDto
+            {
+                Email = user.Email,
+                Password = user.Password
+            };
+
+            _temporaryUserCacheService.StoreTemporaryUser(token, (email, userDto), TimeSpan.FromMinutes(30));
+        }
+
+        public async Task ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            var tempData = _temporaryUserCacheService.GetTemporaryUserDataByToken(resetPasswordDto.Token)
+                ?? throw new SecurityTokenException("Invalid or expired token.");
+
+            var (userEmail, userDto) = ((string, CreateUserDto))tempData;
+
+            var user = await _userRepository.GetByEmailAsync(userEmail)
+                ?? throw new ArgumentException("Email no encontrado");
+
+            var passwordValidation = new PasswordValidationAttribute();
+            var validationResult = passwordValidation.GetValidationResult(resetPasswordDto.NewPassword, new ValidationContext(resetPasswordDto));
+
+            if (validationResult != ValidationResult.Success)
+            {
+                throw new ArgumentException(validationResult.ErrorMessage);
+            }
+
+            if (_passwordHasherService.VerifyPassword(user.Password, resetPasswordDto.NewPassword))
+            {
+                throw new ArgumentException("La nueva contraseña no puede ser la misma que la contraseña anterior.");
+            }
+
+            user.Password = _passwordHasherService.HashPassword(resetPasswordDto.NewPassword);
+            await _userRepository.UpdateAsync(user);
+            _temporaryUserCacheService.RemoveTemporaryUser(resetPasswordDto.Token);
+        }
+
 
 
         public async Task<string> GenerateVerificationToken(string email)
         {
-            var userEntity = await _userRepository.GetByEmailAsync(email);
-            if (userEntity == null)
-            {
-                throw new KeyNotFoundException("Usuario no encontrado");
-            }
-
-            return _verificationTokenService.GenerateVerificationToken(userEntity.Email); 
+            var userEntity = await _userRepository.GetByEmailAsync(email) ?? throw new KeyNotFoundException("Usuario no encontrado");
+            return _verificationTokenService.GenerateVerificationToken(userEntity.Email);
         }
 
         public override async Task<ICollection<ReadUserDto>> CreateRange(ICollection<CreateUserDto> userDtos)
@@ -92,12 +135,7 @@ namespace Application.Services
 
         public override async Task Delete<Tid>(Tid id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null)
-            {
-                throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningun usuario.");
-            }
-
+            var user = await _userRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningun usuario.");
             await _userRepository.DeleteAsync(user);
         }
 
@@ -118,20 +156,25 @@ namespace Application.Services
 
         public override async Task Update(UpdateUserDto userDto)
         {
-            var user = await _userRepository.GetByIdAsync(userDto.Id);
-            if (user == null)
-            {
-                throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningun usuario.");
-            }
+            var user = await _userRepository.GetByIdAsync(userDto.Id) ?? throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningún usuario.");
 
             if (!string.IsNullOrEmpty(userDto.Password))
             {
+                var passwordValidation = new PasswordValidationAttribute();
+                var validationResult = passwordValidation.GetValidationResult(userDto.Password, new ValidationContext(userDto));
+
+                if (validationResult != ValidationResult.Success)
+                {
+                    throw new ArgumentException(validationResult.ErrorMessage);
+                }
+
                 userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
             }
 
-              _mapper.Map(userDto, user);
-             await _userRepository.UpdateAsync(user);
+            _mapper.Map(userDto, user);
+            await _userRepository.UpdateAsync(user);
         }
+
 
         public override async Task<int> UpdateRange(ICollection<UpdateUserDto> userDtos)
         {
@@ -150,12 +193,53 @@ namespace Application.Services
                 var userDto = userDtos.FirstOrDefault(dto => dto.Id == user.Id);
                 if (userDto != null)
                 {
-                    _mapper.Map(userDto, user); 
-                    user.UpdatedAt = DateTime.UtcNow; 
+                    _mapper.Map(userDto, user);
+                    user.UpdatedAt = DateTime.UtcNow;
                 }
             }
 
             return await _userRepository.UpdateRangeAsync(users);
         }
     }
+
+    public class PasswordValidationAttribute : ValidationAttribute
+    {
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        {
+            var password = value as string;
+            if (string.IsNullOrEmpty(password))
+            {
+                return new ValidationResult("La contraseña es obligatoria.");
+            }
+
+            if (password.Length < 8)
+            {
+                return new ValidationResult("La contraseña debe tener al menos 8 caracteres.");
+            }
+
+            if (!password.Any(char.IsUpper))
+            {
+                return new ValidationResult("La contraseña debe contener al menos una letra mayúscula.");
+            }
+
+            if (!password.Any(char.IsLower))
+            {
+                return new ValidationResult("La contraseña debe contener al menos una letra minúscula.");
+            }
+
+            if (!password.Any(char.IsDigit))
+            {
+                return new ValidationResult("La contraseña debe contener al menos un número.");
+            }
+
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+            {
+                return new ValidationResult("La contraseña debe contener al menos un carácter especial.");
+            }
+
+            return ValidationResult.Success;
+        }
+    }
+
+
 }
