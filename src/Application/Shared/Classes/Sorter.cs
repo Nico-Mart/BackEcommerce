@@ -4,8 +4,7 @@ namespace Application.Shared.Classes
 {
     public class Sorter
     {
-        [Required]
-        public string SortBy { get; set; }
+        public string SortBy { get; set; } = "id";
         public bool IsDescending { get; set; } = false;
     }
 }
