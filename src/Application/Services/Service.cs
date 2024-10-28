@@ -37,32 +37,29 @@ namespace Application.Services
         public virtual async Task<PagedResult<TReadDto>> GetAll(Options? options = null)
         {
             var query = _repository.GetAll();
-
             if (options != null)
             {
-                if (options.Filter != null)
+                if (options?.FilterGroup.Filters.Count > 0)
                 {
-                    if (options.Filter.SearchCriteria?.Count > 0) query = ApplyFilter(query, options.Filter);
+                    query = ApplyFilter(query, options.FilterGroup);
                 }
-                if (options.Sorter != null)
+                if (options?.Sorter != null)
                 {
                     query = ApplySorter(query, options.Sorter);
                 }
             }
-
             var rowCount = query.Count();
             var pageCount = (int)Math.Ceiling(rowCount / (double)(options?.Paginator?.PageSize ?? 1));
-
             if (options?.Paginator != null)
             {
                 query = query.Skip((options.Paginator.Page - 1) * options.Paginator.PageSize)
                              .Take(options.Paginator.PageSize);
             }
-
             var entities = await _repository.ToListAsync(query);
             var data = _mapper.Map<ICollection<TReadDto>>(entities);
             return new PagedResult<TReadDto>(data, pageCount);
         }
+
         public virtual async Task<TReadDto> GetByIdAsync<Tid>(Tid id) where Tid : notnull
         {
             var entity = await _repository.GetByIdAsync(id);
@@ -81,65 +78,69 @@ namespace Application.Services
         #endregion
 
         #region Custom Functions
-        protected virtual IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query, Filter filter)
+        private IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query, FilterGroup filterGroup)
         {
-            if (filter.SearchCriteria == null || filter.SearchCriteria.Count <= 0) return query;
-            foreach (SearchCriteria criteria in filter.SearchCriteria)
+            if (filterGroup.Filters.Count <= 0 && filterGroup.ChildGroups.Count <= 0) return query;
+
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+            var combinedExpression = CreateGroupExpression(parameter, filterGroup);
+
+            return query.Where(Expression.Lambda<Func<TEntity, bool>>(combinedExpression, parameter));
+        }
+
+        private Expression CreateGroupExpression(ParameterExpression parameter, FilterGroup group)
+        {
+            Expression? combinedExpression = null;
+
+            foreach (var filter in group.Filters)
             {
-                //Convert to Expressions
-                ParameterExpression parameter = Expression.Parameter(typeof(TEntity), "e"); //Entity
-                MemberExpression property = Expression.Property(parameter, criteria.Field); //Entity property to filter by
-                ConstantExpression searchValue = Expression.Constant(criteria.Value, typeof(string)); //Value to filter by
-
-                Expression? predicate = null;
-
-                switch (criteria.Operator)
-                {
-                    case FilterOperator.Equals:
-                        predicate = Expression.Equal(property, searchValue);
-                        break;
-                    case FilterOperator.NotEquals:
-                        predicate = Expression.NotEqual(property, searchValue);
-                        break;
-                    case FilterOperator.GreaterThan:
-                        predicate = Expression.GreaterThan(property, Expression.Convert(searchValue, property.Type));
-                        break;
-                    case FilterOperator.LessThan:
-                        predicate = Expression.LessThan(property, Expression.Convert(searchValue, property.Type));
-                        break;
-                    case FilterOperator.GreaterThanOrEqual:
-                        predicate = Expression.GreaterThanOrEqual(property, Expression.Convert(searchValue, property.Type));
-                        break;
-                    case FilterOperator.LessThanOrEqual:
-                        predicate = Expression.LessThanOrEqual(property, Expression.Convert(searchValue, property.Type));
-                        break;
-                    case FilterOperator.Contains:
-                        predicate = Expression.Call(property, "Contains", null, searchValue);
-                        break;
-                    case FilterOperator.NotContains:
-                        predicate = Expression.Not(Expression.Call(property, "Contains", null, searchValue));
-                        break;
-                    case FilterOperator.BeginsWith:
-                        predicate = Expression.Call(property, "StartsWith", null, searchValue);
-                        break;
-                    case FilterOperator.NotBeginsWith:
-                        predicate = Expression.Not(Expression.Call(property, "StartsWith", null, searchValue));
-                        break;
-                    case FilterOperator.EndsWith:
-                        predicate = Expression.Call(property, "EndsWith", null, searchValue);
-                        break;
-                    case FilterOperator.NotEndsWith:
-                        predicate = Expression.Not(Expression.Call(property, "EndsWith", null, searchValue));
-                        break;
-                }
-
-                //Apply the criteria
-                if (predicate != null) query = query.Where(Expression.Lambda<Func<TEntity, bool>>(predicate, parameter));
+                var predicate = CreateExpression(parameter, filter);
+                combinedExpression = combinedExpression == null
+                    ? predicate
+                    : (group.LogicalOperator == LogicalOperator.And
+                        ? Expression.AndAlso(combinedExpression, predicate)
+                        : Expression.OrElse(combinedExpression, predicate));
             }
 
-            return query;
+            //Calls recursively until there's no more childGroups
+            foreach (var childGroup in group.ChildGroups)
+            {
+                var childPredicate = CreateGroupExpression(parameter, childGroup);
+                combinedExpression = combinedExpression == null
+                    ? childPredicate
+                    : (group.LogicalOperator == LogicalOperator.And
+                        ? Expression.AndAlso(combinedExpression, childPredicate)
+                        : Expression.OrElse(combinedExpression, childPredicate));
+            }
+
+            return combinedExpression!;
         }
-        protected virtual IQueryable<TEntity> ApplySorter(IQueryable<TEntity> query, Sorter sorter)
+
+        private Expression CreateExpression(ParameterExpression parameter, Filter filter)
+        {
+            var property = Expression.Property(parameter, filter.Field);
+            var parsedValue = Convert.ChangeType(filter.Value, property.Type);
+            var searchValue = Expression.Constant(parsedValue, property.Type);
+
+            return filter.Operator switch
+            {
+                FilterOperator.Equals => Expression.Equal(property, searchValue),
+                FilterOperator.NotEquals => Expression.NotEqual(property, searchValue),
+                FilterOperator.GreaterThan => Expression.GreaterThan(property, searchValue),
+                FilterOperator.LessThan => Expression.LessThan(property, searchValue),
+                FilterOperator.GreaterThanOrEqual => Expression.GreaterThanOrEqual(property, searchValue),
+                FilterOperator.LessThanOrEqual => Expression.LessThanOrEqual(property, searchValue),
+                FilterOperator.Contains => Expression.Call(property, "Contains", null, searchValue),
+                FilterOperator.NotContains => Expression.Not(Expression.Call(property, "Contains", null, searchValue)),
+                FilterOperator.BeginsWith => Expression.Call(property, "StartsWith", null, searchValue),
+                FilterOperator.NotBeginsWith => Expression.Not(Expression.Call(property, "StartsWith", null, searchValue)),
+                FilterOperator.EndsWith => Expression.Call(property, "EndsWith", null, searchValue),
+                FilterOperator.NotEndsWith => Expression.Not(Expression.Call(property, "EndsWith", null, searchValue)),
+                _ => throw new NotSupportedException($"Unsupported filter operator: {filter.Operator}")
+            };
+        }
+
+        private IQueryable<TEntity> ApplySorter(IQueryable<TEntity> query, Sorter sorter)
         {
             //Convert to Expressions
             ParameterExpression parameter = Expression.Parameter(typeof(TEntity), "e"); //Entity

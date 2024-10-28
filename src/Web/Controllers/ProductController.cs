@@ -17,10 +17,11 @@ namespace Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] Options? options)
+        public async Task<IActionResult> GetAll([FromQuery] string? filters = null, [FromQuery] Sorter? sorter = null, [FromQuery] Paginator? paginator = null)
         {
             try
             {
+                var options = new Options(filters, sorter, paginator);
                 var products = await _productService.GetAll(options);
                 return Ok(products);
             }
