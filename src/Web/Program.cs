@@ -14,7 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ContractResolver =
+            new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+    });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(setupAction =>
@@ -104,6 +109,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 #region Services
 builder.Services.Configure<AutenticacionServiceOptions>(
     builder.Configuration.GetSection(AutenticacionServiceOptions.AutenticacionService));
+builder.Services.AddScoped<ICustomAuthenticationService, AutenticacionService>();
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IGenerateVerificationTokenService, GenerateVerificationTokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

@@ -1,4 +1,5 @@
 ﻿using Application.Models.Password;
+using Application.Models.Register;
 using Application.Models.User;
 
 namespace Application.Interfaces
@@ -9,5 +10,6 @@ namespace Application.Interfaces
         Task ResetPassword(ResetPasswordDto resetPasswordDto);
         Task RequestPasswordReset(string email);
         Task<string> GenerateVerificationToken(string email);
+        Task<UpdateUserDto> GetUserById(int id);
     }
 }

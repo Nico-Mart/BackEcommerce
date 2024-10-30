@@ -2,27 +2,30 @@
 using Application.Models.Password;
 using Application.Models.Register;
 using Application.Models.User;
+using Application.Services;
 using AutoMapper;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class RegisterController : ControllerBase
+    public class ClientController : ControllerBase
     {
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
 
-        public RegisterController(IUserService userService, IMapper mapper)
+        public ClientController(IUserService userService, IMapper mapper)
         {
             _userService = userService;
             _mapper = mapper;
 
         }
-        [HttpPost("register")]
+        [HttpPost("RegisterClient")]
         [AllowAnonymous]
         public async Task<ActionResult> Register(CreateRegisterUserDto registerDto)
         {
@@ -40,7 +43,7 @@ namespace Web.Controllers
             }
         }
 
-        [HttpPost("resetPassword-email")]
+        [HttpPost("ResetPassword-Using-Email")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPasswordEmail([FromBody] EmailResetPassword emailReset)
         {
@@ -70,13 +73,40 @@ namespace Web.Controllers
             }
         }
 
-
-        [HttpPut]
-        public async Task<ActionResult> Update(UpdateUserDto userDto)
+        [HttpPatch("UpdateClient/{id}")]
+        public async Task<ActionResult> UpdatePartial(int id, [FromBody] JsonPatchDocument<UpdateUserDto> patchDoc)
         {
-            await _userService.Update(userDto);
+            if (patchDoc == null)
+            {
+                return BadRequest("Invalid patch document.");
+            }
+
+            var user = await _userService.GetUserById(id);
+            if (user == null)
+            {
+                return NotFound($"User with ID {id} not found.");
+            }
+
+
+            patchDoc.ApplyTo(user, error =>
+            {
+                if (error != null)
+                {
+                    ModelState.AddModelError(error.AffectedObject.ToString(), error.ErrorMessage);
+                }
+            });
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _userService.Update(user);
+
             return NoContent();
         }
+
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {

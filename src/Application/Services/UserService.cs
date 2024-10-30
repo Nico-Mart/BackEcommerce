@@ -57,6 +57,7 @@ namespace Application.Services
             return new ReadUserDto { Email = userDto.Email, FirstName = userDto.FirstName };
         }
 
+
         public async Task ActivateAccount(string token)
         {
             var userDto = _temporaryUserCacheService.GetTemporaryUserByToken(token) ?? throw new SecurityTokenException("Token invalido o expirado.");
@@ -158,6 +159,20 @@ namespace Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userDto.Id) ?? throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningún usuario.");
 
+            if (!string.IsNullOrEmpty(userDto.Email) && userDto.Email != user.Email)
+            {
+                if (_temporaryUserCacheService.CheckIfUserExists(userDto.Email))
+                {
+                    throw new ArgumentException($"El Email '{userDto.Email}' está en uso.");
+                }
+
+                var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
+                _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
+                await _emailService.SendEmailAsync(userDto.Email, "Verifique su nuevo Email",
+                    "<h3>Verifique su nuevo Email</h3>" +
+                    "<p>Por favor verifique su nuevo correo haciendo clic en el enlace a continuación:</p>" +
+                    $"<a href='https://localhost:7037/api/User/verify?token={token}' style='color:#007BFF; text-decoration:none;'>Verificar nuevo correo</a>");
+            }
             if (!string.IsNullOrEmpty(userDto.Password))
             {
                 var passwordValidation = new PasswordValidationAttribute();
@@ -168,12 +183,32 @@ namespace Application.Services
                     throw new ArgumentException(validationResult.ErrorMessage);
                 }
 
-                userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
+                user.Password = _passwordHasherService.HashPassword(userDto.Password);
+            }
+            if (!string.IsNullOrEmpty(userDto.FirstName))
+            {
+                user.FirstName = userDto.FirstName;
+            }
+
+            if (!string.IsNullOrEmpty(userDto.LastName))
+            {
+                user.LastName = userDto.LastName;
             }
 
             _mapper.Map(userDto, user);
             await _userRepository.UpdateAsync(user);
         }
+        public async Task<UpdateUserDto> GetUserById(int id)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningún usuario.");
+            }
+
+            return _mapper.Map<UpdateUserDto>(user);
+        }
+
 
 
         public override async Task<int> UpdateRange(ICollection<UpdateUserDto> userDtos)

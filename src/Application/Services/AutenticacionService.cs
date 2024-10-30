@@ -15,11 +15,13 @@ namespace Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly AutenticacionServiceOptions _options;
+        private readonly IPasswordHasherService _passwordHasher;
 
-        public AutenticacionService(IUserRepository userRepository, IOptions<AutenticacionServiceOptions> options)
+        public AutenticacionService(IUserRepository userRepository, IOptions<AutenticacionServiceOptions> options, IPasswordHasherService passwordHasher)
         {
             _userRepository = userRepository;
             _options = options.Value;
+            _passwordHasher = passwordHasher;
         }
 
         private async Task<User?> ValidateUserAsync(AuthenticationRequest authenticationRequest)
@@ -28,10 +30,9 @@ namespace Application.Services
                 return null;
 
             var user = await _userRepository.GetByEmailAsync(authenticationRequest.Email);
-
             if (user == null) return null;
 
-            if (user.Password == authenticationRequest.Password &&
+            if (_passwordHasher.VerifyPassword(user.Password, authenticationRequest.Password) &&
                 (user.Role.ToString() == "Admin" || user.Role.ToString() == "SysAdmin" || user.Role.ToString() == "Client"))
             {
                 return user;
