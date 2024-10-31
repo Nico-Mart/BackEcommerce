@@ -19,8 +19,9 @@ namespace Web.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ICollection<ReadUserDto>>> GetAll(Options? options = null)
+        public async Task<ActionResult<ICollection<ReadUserDto>>> GetAll([FromQuery] string? filters = null, [FromQuery] Sorter? sorter = null, [FromQuery] Paginator? paginator = null)
         {
+            var options = new Options(filters, sorter, paginator);
             var users = await _userService.GetAll(options);
             return Ok(users);
         }
@@ -68,8 +69,6 @@ namespace Web.Controllers
                 return StatusCode(500, $"Ocurrió un error: {ex.Message}");
             }
         }
-
-
 
         //[HttpPost("create-range-and-verify")]
         //public async Task<ActionResult> CreateRangeAndVerify(ICollection<CreateUserDto> userDtos)

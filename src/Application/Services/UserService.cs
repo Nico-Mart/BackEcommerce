@@ -159,20 +159,6 @@ namespace Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userDto.Id) ?? throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningún usuario.");
 
-            if (!string.IsNullOrEmpty(userDto.Email) && userDto.Email != user.Email)
-            {
-                if (_temporaryUserCacheService.CheckIfUserExists(userDto.Email))
-                {
-                    throw new ArgumentException($"El Email '{userDto.Email}' está en uso.");
-                }
-
-                var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
-                _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
-                await _emailService.SendEmailAsync(userDto.Email, "Verifique su nuevo Email",
-                    "<h3>Verifique su nuevo Email</h3>" +
-                    "<p>Por favor verifique su nuevo correo haciendo clic en el enlace a continuación:</p>" +
-                    $"<a href='https://localhost:7037/api/User/verify?token={token}' style='color:#007BFF; text-decoration:none;'>Verificar nuevo correo</a>");
-            }
             if (!string.IsNullOrEmpty(userDto.Password))
             {
                 var passwordValidation = new PasswordValidationAttribute();
@@ -194,21 +180,18 @@ namespace Application.Services
             {
                 user.LastName = userDto.LastName;
             }
+            var role = user.Role;
+            var isActive = user.IsActive;
+            var password = user.Password;
+            var email = user.Email;
 
             _mapper.Map(userDto, user);
+            user.Role = role;
+            user.IsActive = isActive;
+            user.Password = password;
+            user.Email = email;
             await _userRepository.UpdateAsync(user);
         }
-        public async Task<UpdateUserDto> GetUserById(int id)
-        {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null)
-            {
-                throw new KeyNotFoundException($"El id proporcionado: '{id}' no corresponde a ningún usuario.");
-            }
-
-            return _mapper.Map<UpdateUserDto>(user);
-        }
-
 
 
         public override async Task<int> UpdateRange(ICollection<UpdateUserDto> userDtos)

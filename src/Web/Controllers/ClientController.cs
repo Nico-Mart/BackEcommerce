@@ -2,13 +2,10 @@
 using Application.Models.Password;
 using Application.Models.Register;
 using Application.Models.User;
-using Application.Services;
 using AutoMapper;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 
 namespace Web.Controllers
 {
@@ -73,37 +70,15 @@ namespace Web.Controllers
             }
         }
 
-        [HttpPatch("UpdateClient/{id}")]
-        public async Task<ActionResult> UpdatePartial(int id, [FromBody] JsonPatchDocument<UpdateUserDto> patchDoc)
+        [HttpPut("UpdateClient/{id}")]
+        public async Task<ActionResult> Update(int id, [FromBody]UpdateRegisterUserDto userDto)
         {
-            if (patchDoc == null)
-            {
-                return BadRequest("Invalid patch document.");
-            }
-
-            var user = await _userService.GetUserById(id);
-            if (user == null)
-            {
-                return NotFound($"User with ID {id} not found.");
-            }
-
-
-            patchDoc.ApplyTo(user, error =>
-            {
-                if (error != null)
-                {
-                    ModelState.AddModelError(error.AffectedObject.ToString(), error.ErrorMessage);
-                }
-            });
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
+            
+            var user = _mapper.Map<UpdateUserDto>(userDto);
+            user.Id = id;
             await _userService.Update(user);
 
-            return NoContent();
+            return Ok();
         }
 
 

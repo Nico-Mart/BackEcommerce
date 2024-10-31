@@ -10,6 +10,5 @@ namespace Application.Interfaces
         Task ResetPassword(ResetPasswordDto resetPasswordDto);
         Task RequestPasswordReset(string email);
         Task<string> GenerateVerificationToken(string email);
-        Task<UpdateUserDto> GetUserById(int id);
     }
 }
