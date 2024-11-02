@@ -4,6 +4,7 @@ using Application.Models.User;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
 
@@ -12,19 +13,19 @@ namespace Application.Services
     public class UserService : Service<User, CreateUserDto, ReadUserDto, UpdateUserDto>, IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasherService _passwordHasherService;
+        private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IGenerateVerificationTokenService _verificationTokenService;
         private readonly IEmailService _emailService;
         private readonly ITemporaryUserCacheService _temporaryUserCacheService;
         public UserService(IUserRepository userRepository, IMapper mapper,
-                            IPasswordHasherService passwordHasherService,
+                            IPasswordHasher<User> passwordHasher,
                             IGenerateVerificationTokenService verificationTokenService,
                             IEmailService emailService,
                             ITemporaryUserCacheService temporaryUserCacheService
             ) : base(userRepository, mapper)
         {
             _userRepository = userRepository;
-            _passwordHasherService = passwordHasherService;
+            _passwordHasher = passwordHasher;
             _verificationTokenService = verificationTokenService;
             _emailService = emailService;
             _temporaryUserCacheService = temporaryUserCacheService;
@@ -45,7 +46,9 @@ namespace Application.Services
                 throw new ArgumentException(validationResult.ErrorMessage);
             }
 
-            userDto.Password = _passwordHasherService.HashPassword(userDto.Password);
+            var userEntity = _mapper.Map<User>(userDto);
+            userEntity.Password = _passwordHasher.HashPassword(userEntity, userDto.Password);
+
             var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
             _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
 
@@ -56,6 +59,35 @@ namespace Application.Services
 
             return new ReadUserDto { Email = userDto.Email, FirstName = userDto.FirstName };
         }
+
+        public async Task<ReadUserDto> CreateWithoutEmailVerification(CreateUserDto userDto)
+        {
+            var existingUser = await _userRepository.GetByEmailAsync(userDto.Email);
+            if (existingUser != null)
+            {
+                throw new ArgumentException($"El Email '{userDto.Email}' está en uso.");
+            }
+
+            var passwordValidation = new PasswordValidationAttribute();
+            var validationResult = passwordValidation.GetValidationResult(userDto.Password, new ValidationContext(userDto));
+
+            if (validationResult != ValidationResult.Success)
+            {
+                throw new ArgumentException(validationResult.ErrorMessage);
+            }
+
+            var userEntity = _mapper.Map<User>(userDto);
+            userEntity.Password = _passwordHasher.HashPassword(userEntity, userDto.Password); 
+
+            await _userRepository.CreateAsync(userEntity); 
+
+            return new ReadUserDto
+            {
+                Email = userDto.Email,
+                FirstName = userDto.FirstName
+            };
+        }
+
 
 
         public async Task ActivateAccount(string token)
@@ -102,12 +134,13 @@ namespace Application.Services
                 throw new ArgumentException(validationResult.ErrorMessage);
             }
 
-            if (_passwordHasherService.VerifyPassword(user.Password, resetPasswordDto.NewPassword))
+            var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, resetPasswordDto.NewPassword);
+            if (verificationResult == PasswordVerificationResult.Success)
             {
                 throw new ArgumentException("La nueva contraseña no puede ser la misma que la contraseña anterior.");
             }
 
-            user.Password = _passwordHasherService.HashPassword(resetPasswordDto.NewPassword);
+            user.Password = _passwordHasher.HashPassword(user, resetPasswordDto.NewPassword);
             await _userRepository.UpdateAsync(user);
             _temporaryUserCacheService.RemoveTemporaryUser(resetPasswordDto.Token);
         }
@@ -169,7 +202,7 @@ namespace Application.Services
                     throw new ArgumentException(validationResult.ErrorMessage);
                 }
 
-                user.Password = _passwordHasherService.HashPassword(userDto.Password);
+                user.Password = _passwordHasher.HashPassword(user ,userDto.Password);
             }
             if (!string.IsNullOrEmpty(userDto.FirstName))
             {

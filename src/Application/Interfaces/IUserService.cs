@@ -7,6 +7,7 @@ namespace Application.Interfaces
     public interface IUserService : IService<CreateUserDto,ReadUserDto,UpdateUserDto>
     {
         Task ActivateAccount(string token);
+        Task<ReadUserDto> CreateWithoutEmailVerification(CreateUserDto userDto);
         Task ResetPassword(ResetPasswordDto resetPasswordDto);
         Task RequestPasswordReset(string email);
         Task<string> GenerateVerificationToken(string email);

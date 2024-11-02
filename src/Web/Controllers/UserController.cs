@@ -52,6 +52,21 @@ namespace Web.Controllers
             }
         }
 
+        [HttpPost("only-create")]
+        public async Task<ActionResult> OnlyCreate(CreateUserDto userDto)
+        {
+            try
+            {
+                var createdUser = await _userService.CreateWithoutEmailVerification(userDto);
+                return Ok("Se creo exitosamente.");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
         [HttpGet("verify")]
         public async Task<ActionResult> ActivateUser([FromQuery] string token)
         {

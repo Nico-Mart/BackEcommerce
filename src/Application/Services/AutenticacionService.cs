@@ -3,6 +3,7 @@ using Application.Models.Request;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,9 +16,12 @@ namespace Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly AutenticacionServiceOptions _options;
-        private readonly IPasswordHasherService _passwordHasher;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
-        public AutenticacionService(IUserRepository userRepository, IOptions<AutenticacionServiceOptions> options, IPasswordHasherService passwordHasher)
+        public AutenticacionService(
+            IUserRepository userRepository,
+            IOptions<AutenticacionServiceOptions> options,
+            IPasswordHasher<User> passwordHasher)
         {
             _userRepository = userRepository;
             _options = options.Value;
@@ -27,20 +31,33 @@ namespace Application.Services
         private async Task<User?> ValidateUserAsync(AuthenticationRequest authenticationRequest)
         {
             if (string.IsNullOrEmpty(authenticationRequest.Email) || string.IsNullOrEmpty(authenticationRequest.Password))
-                return null;
-
-            var user = await _userRepository.GetByEmailAsync(authenticationRequest.Email);
-            if (user == null) return null;
-
-            if (_passwordHasher.VerifyPassword(user.Password, authenticationRequest.Password) &&
-                (user.Role.ToString() == "Admin" || user.Role.ToString() == "SysAdmin" || user.Role.ToString() == "Client"))
             {
-                return user;
+                Console.WriteLine("Email o contraseña vacíos");
+                return null;
             }
 
-            return null;
-        }
+            var user = await _userRepository.GetByEmailAsync(authenticationRequest.Email);
+            if (user == null)
+            {
+                Console.WriteLine("Usuario no encontrado");
+                return null;
+            }
 
+            var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.Password, authenticationRequest.Password);
+            if (passwordVerificationResult != PasswordVerificationResult.Success)
+            {
+                Console.WriteLine("Contraseña inválida");
+                return null;
+            }
+
+            if (user.Role.ToString() != "Admin" && user.Role.ToString() != "SysAdmin" && user.Role.ToString() != "Client")
+            {
+                Console.WriteLine("Rol de usuario no permitido");
+                return null;
+            }
+
+            return user;
+        }
 
         public async Task<string> AutenticarAsync(AuthenticationRequest authenticationRequest)
         {
@@ -52,16 +69,16 @@ namespace Application.Services
             }
 
             var securityPassword = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_options.SecretForKey));
-
             var credentials = new SigningCredentials(securityPassword, SecurityAlgorithms.HmacSha256);
 
-            var claimsForToken = new List<Claim> {
-            new Claim("sub", user.Id.ToString()),
-            new Claim("given_name", user.FirstName),
-            new Claim("family_name", user.LastName),
-            new Claim("Email", user.Email),
-            new Claim("role", user.Role.ToString())
-        };
+            var claimsForToken = new List<Claim>
+            {
+                new Claim("sub", user.Id.ToString()),
+                new Claim("given_name", user.FirstName),
+                new Claim("family_name", user.LastName),
+                new Claim("Email", user.Email),
+                new Claim("role", user.Role.ToString())
+            };
 
             var jwtSecurityToken = new JwtSecurityToken(
                 _options.Issuer,
@@ -71,13 +88,10 @@ namespace Application.Services
                 DateTime.UtcNow.AddHours(1),
                 credentials);
 
-            var tokenToReturn = new JwtSecurityTokenHandler()
-                .WriteToken(jwtSecurityToken);
+            var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 
             return tokenToReturn.ToString();
         }
-
-
 
         public class AutenticacionServiceOptions
         {
@@ -87,7 +101,5 @@ namespace Application.Services
             public string Audience { get; set; }
             public string SecretForKey { get; set; }
         }
-
     }
 }
-
