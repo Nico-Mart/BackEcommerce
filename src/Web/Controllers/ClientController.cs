@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models.Password;
 using Application.Models.Register;
+using Application.Models.Request;
 using Application.Models.User;
 using AutoMapper;
 using Domain.Enums;
@@ -15,13 +16,18 @@ namespace Web.Controllers
     {
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
+        private readonly ICustomAuthenticationService _customAuthenticationService;
 
-        public ClientController(IUserService userService, IMapper mapper)
+        public ClientController(IUserService userService, IMapper mapper, IConfiguration configuration, ICustomAuthenticationService customAuthenticationService)
         {
             _userService = userService;
             _mapper = mapper;
+            _config = configuration;
+            _customAuthenticationService = customAuthenticationService;
 
         }
+
         [HttpPost("RegisterClient")]
         [AllowAnonymous]
         public async Task<ActionResult> Register(CreateRegisterUserDto registerDto)
@@ -38,6 +44,14 @@ namespace Web.Controllers
             {
                 return BadRequest($"Error durante el registro: {ex.Message}");
             }
+        }
+
+        [HttpPost("Login")]
+        public async Task<ActionResult<string>> LoginClient(AuthenticationRequest authenticationRequest)
+        {
+            string token = await _customAuthenticationService.AutenticarAsync(authenticationRequest);
+
+            return Ok(token);
         }
 
         [HttpPost("ResetPassword-Using-Email")]

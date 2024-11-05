@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models.User;
 using Application.Shared.Classes;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 

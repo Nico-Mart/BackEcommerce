@@ -192,18 +192,6 @@ namespace Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userDto.Id) ?? throw new KeyNotFoundException($"El id proporcionado: '{userDto.Id}' no corresponde a ningún usuario.");
 
-            if (!string.IsNullOrEmpty(userDto.Password))
-            {
-                var passwordValidation = new PasswordValidationAttribute();
-                var validationResult = passwordValidation.GetValidationResult(userDto.Password, new ValidationContext(userDto));
-
-                if (validationResult != ValidationResult.Success)
-                {
-                    throw new ArgumentException(validationResult.ErrorMessage);
-                }
-
-                user.Password = _passwordHasher.HashPassword(user ,userDto.Password);
-            }
             if (!string.IsNullOrEmpty(userDto.FirstName))
             {
                 user.FirstName = userDto.FirstName;
