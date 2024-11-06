@@ -47,7 +47,9 @@ namespace Application.Services
             }
 
             var userEntity = _mapper.Map<User>(userDto);
-            userEntity.Password = _passwordHasher.HashPassword(userEntity, userDto.Password);
+            userDto.Password = _passwordHasher.HashPassword(userEntity, userDto.Password);
+
+
 
             var token = _verificationTokenService.GenerateVerificationToken(userDto.Email);
             _temporaryUserCacheService.StoreTemporaryUser(token, userDto, TimeSpan.FromMinutes(30));
