@@ -1,5 +1,4 @@
-﻿using Application.Models.Temp;
-using Application.Models.User;
+﻿using Application.Models.User;
 
 namespace Application.Interfaces
 {
