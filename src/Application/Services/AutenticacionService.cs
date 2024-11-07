@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models.Request;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -50,10 +51,9 @@ namespace Application.Services
                 return null;
             }
 
-            if (user.Role.ToString() != "Admin" && user.Role.ToString() != "SysAdmin" && user.Role.ToString() != "Client")
+            if (user.Role != Role.Admin && user.Role != Role.Sysadmin && user.Role != Role.Client)
             {
-                Console.WriteLine("Rol de usuario no permitido");
-                return null;
+                throw new UnauthorizedAccessException("Rol de usuario no permitido");
             }
 
             return user;
