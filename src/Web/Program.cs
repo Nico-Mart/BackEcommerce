@@ -95,14 +95,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Sysadmin", policy => policy.RequireClaim(ClaimTypes.Role, "Sysadmin"));
     options.AddPolicy("Admin", policy => policy.RequireClaim(ClaimTypes.Role, "Admin"));
     options.AddPolicy("Client", policy => policy.RequireClaim(ClaimTypes.Role, "Client"));
-    options.AddPolicy("ClientAdmin", policy => policy.RequireClaim(ClaimTypes.Role, "Client", "Admin"));
-    options.AddPolicy("All", policy => policy.RequireClaim(ClaimTypes.Role, "Admin", "Sysadmin", "Client"));
 });
 
 builder.Services.AddMemoryCache();
 
 #region Repositories
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 builder.Services.AddScoped<IPriceRepository, PriceRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -114,8 +114,10 @@ builder.Services.Configure<AutenticacionServiceOptions>(
 builder.Services.AddScoped<ICustomAuthenticationService, AutenticacionService>();
 builder.Services.AddScoped<IGenerateVerificationTokenService, GenerateVerificationTokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITemporaryUserCacheService, TemporaryUserCacheService>();

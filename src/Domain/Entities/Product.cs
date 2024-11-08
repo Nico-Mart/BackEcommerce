@@ -36,7 +36,7 @@ public class Product
     public DateTime CreatedAt { get; set; }
 
     [Column("updated_at", TypeName = "timestamp")]
-    public DateTime UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey("IdCategory")]
     [InverseProperty("Products")]

@@ -11,10 +11,10 @@ namespace Infrastructure.Data
         {
         }
 
-        public async Task<User?> GetByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             return await _context.Users
-                .SingleOrDefaultAsync(u => u.Email == email);
+                .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
         }
 
 

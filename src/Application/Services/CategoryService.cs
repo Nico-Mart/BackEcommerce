@@ -31,7 +31,7 @@ namespace Application.Services
             var entities = await _categoryRepository.ToListAsync(query);
 
             //Ensure entities is not empty
-            if (entities == null || !entities.Any()) throw new KeyNotFoundException("No categories were found with the provided keys");
+            if (entities == null || entities.Count == 0) throw new KeyNotFoundException("No categories were found with the provided keys");
 
             //Update entities
             foreach (var entity in entities)
@@ -55,7 +55,7 @@ namespace Application.Services
         {
             var query = _categoryRepository.GetAll().Where(p => ids.Contains((Tid)(Object)p.Id));
             var entities = await _categoryRepository.ToListAsync(query);
-            if (entities == null || !entities.Any()) throw new KeyNotFoundException("No categories were found with the provided keys");
+            if (entities == null || entities.Count == 0) throw new KeyNotFoundException("No categories were found with the provided keys");
             return await _categoryRepository.DeleteRangeAsync(entities);
         }
     }

@@ -21,7 +21,7 @@ namespace Application.Profiles
             CreateMap<UpdateProductDto, Product>()
                 .ForMember(
                     dest => dest.ProductVariants,
-                    opt => opt.MapFrom(src => src.ProductVariants));
+                    opt => opt.Ignore());
         }
     }
 }

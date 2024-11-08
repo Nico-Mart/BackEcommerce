@@ -12,6 +12,6 @@ namespace Application.Models.Product
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public decimal Price { get; set; }
-        public ICollection<ProductVariantDto> ProductVariants { get; set; } = new List<ProductVariantDto>();
+        public ICollection<ReadProductVariantDto> ProductVariants { get; set; } = new List<ReadProductVariantDto>();
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace Application.Models.ProductVariant
 {
-    public class ProductVariantDto
+    public class ReadProductVariantDto
     {
         public int Id { get; set; }
         public int IdProduct { get; set; }

@@ -9,7 +9,8 @@ namespace Application.Profiles
         public ProductVariantProfile()
         {
             CreateMap<CreateProductVariantDto, ProductVariant>();
-            CreateMap<ProductVariant, ProductVariantDto>();
+            CreateMap<ProductVariant, ReadProductVariantDto>();
+            CreateMap<UpdateProductVariantDto, ProductVariant>();
         }
     }
 }

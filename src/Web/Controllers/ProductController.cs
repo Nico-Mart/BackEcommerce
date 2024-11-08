@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models.Product;
+using Application.Models.ProductVariant;
 using Application.Shared.Classes;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,12 +11,15 @@ namespace Web.Controllers
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
+        private readonly IProductVariantService _productVariantService;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, IProductVariantService productVariantService)
         {
             _productService = productService;
+            _productVariantService = productVariantService;
         }
 
+        #region Product endpoints
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? filters = null, [FromQuery] Sorter? sorter = null, [FromQuery] Paginator? paginator = null)
         {
@@ -152,5 +156,133 @@ namespace Web.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpDelete("range")]
+        public async Task<IActionResult> DeleteRange(List<int> ids)
+        {
+            try
+            {
+                var rows = await _productService.DeleteRange(ids);
+                return Ok(rows);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region ProductVariant endpoints
+        [HttpGet("{id}/variants")]
+        public async Task<IActionResult> GetAllVariantsByProductId(int id)
+        {
+            try
+            {
+                var productVariants = await _productVariantService.GetAll(id);
+                return Ok(productVariants);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("variant")]
+        public async Task<IActionResult> GetAllVariants([FromQuery] string? filters = null, [FromQuery] Sorter? sorter = null, [FromQuery] Paginator? paginator = null)
+        {
+            try
+            {
+                var options = new Options(filters, sorter, paginator);
+                var productVariants = await _productVariantService.GetAll(options);
+                return Ok(productVariants);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("variant")]
+        public async Task<IActionResult> VariantUpdate([FromBody] UpdateProductVariantDto productVariantDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                await _productVariantService.Update(productVariantDto);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("variant/range")]
+        public async Task<IActionResult> VariantUpdateRange([FromBody] List<UpdateProductVariantDto> productVariants)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var rows = await _productVariantService.UpdateRange(productVariants);
+                return Ok(rows);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("variant/{id}")]
+        public async Task<IActionResult> VariantDelete(int id)
+        {
+            try
+            {
+                await _productVariantService.Delete(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("variant/range")]
+        public async Task<IActionResult> VariantDeleteRange(List<int> ids)
+        {
+            try
+            {
+                var rows = await _productVariantService.DeleteRange(ids);
+                return Ok(rows);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        #endregion
     }
 }
