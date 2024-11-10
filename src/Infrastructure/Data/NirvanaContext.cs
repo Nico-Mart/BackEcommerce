@@ -36,9 +36,9 @@ public class NirvanaContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.HasOne(d => d.IdUserNavigation).WithMany(p => p.Addresses)
+            entity.HasOne(d => d.IdOrderNavigation).WithOne(p => p.IdAddressNavigation)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_id_addresses_id_user");
+                .HasConstraintName("fk_orders_id_addresses_id_order");
         });
 
         modelBuilder.Entity<Category>(entity =>

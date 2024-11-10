@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Domain.Entities;
 
 [Table("addresses")]
-[Index("IdUser", Name = "fk_users_id_addresses_id_user_idx")]
+[Index("IdOrder", Name = "fk_orders_id_addresses_id_order_idx")]
 public class Address
 {
     [Key]
@@ -13,9 +13,9 @@ public class Address
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
-    [Column("id_user")]
+    [Column("id_order")]
     [Required]
-    public int IdUser { get; set; }
+    public int IdOrder { get; set; }
 
     [Column("street_name")]
     [Required]
@@ -37,7 +37,7 @@ public class Address
     [StringLength(64)]
     public string Locality { get; set; }
 
-    [ForeignKey("IdUser")]
-    [InverseProperty("Addresses")]
-    public required virtual Client IdUserNavigation { get; set; }
+    [ForeignKey("IdOrder")]
+    [InverseProperty("IdAddressNavigation")]
+    public virtual Order IdOrderNavigation { get; set; }
 }

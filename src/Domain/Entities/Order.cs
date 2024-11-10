@@ -26,4 +26,7 @@ public class Order
 
     [InverseProperty("IdOrderNavigation")]
     public virtual ICollection<OrderLine> OrderLines { get; set; } = new List<OrderLine>();
+
+    [InverseProperty("IdOrderNavigation")]
+    public virtual Address IdAddressNavigation { get; set; }
 }

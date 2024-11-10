@@ -11,7 +11,9 @@ namespace Infrastructure.Data
         }
         public override IQueryable<Order> GetAll()
         {
-            return _context.Orders.Include(o => o.OrderLines).ThenInclude(ol => ol.IdProductVariantNavigation);
+            return _context.Orders
+                .Include(o => o.IdAddressNavigation)
+                .Include(o => o.OrderLines).ThenInclude(ol => ol.IdProductVariantNavigation);
         }
     }
 }

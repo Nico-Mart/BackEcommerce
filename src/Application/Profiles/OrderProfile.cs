@@ -11,12 +11,18 @@ namespace Application.Profiles
             CreateMap<CreateOrderDto, Order>()
                 .ForMember(
                     dest => dest.OrderLines,
-                    opt => opt.MapFrom(src => src.OrderLines));
+                    opt => opt.MapFrom(src => src.OrderLines))
+                .ForMember(
+                    dest => dest.IdAddressNavigation,
+                    opt => opt.MapFrom(src => src.Address));
 
             CreateMap<Order, ReadOrderDto>()
                 .ForMember(
                     dest => dest.OrderLines,
-                    opt => opt.MapFrom(src => src.OrderLines));
+                    opt => opt.MapFrom(src => src.OrderLines))
+                .ForMember(
+                    dest => dest.Address,
+                    opt => opt.MapFrom(src => src.IdAddressNavigation));
 
             CreateMap<UpdateOrderDto, Order>()
                 .ForMember(

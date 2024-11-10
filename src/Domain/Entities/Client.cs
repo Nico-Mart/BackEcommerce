@@ -12,8 +12,5 @@ namespace Domain.Entities
 
         [InverseProperty("IdUserNavigation")]
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-
-        [InverseProperty("IdUserNavigation")]
-        public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
     }
 }
