@@ -81,13 +81,8 @@ namespace Application.Services
             var userEntity = _mapper.Map<User>(userDto);
             userEntity.Password = _passwordHasher.HashPassword(userEntity, userDto.Password); 
 
-            await _userRepository.CreateAsync(userEntity); 
-
-            return new ReadUserDto
-            {
-                Email = userDto.Email,
-                FirstName = userDto.FirstName
-            };
+            var entity = await _userRepository.CreateAsync(userEntity);
+            return _mapper.Map<ReadUserDto>(entity);
         }
 
 

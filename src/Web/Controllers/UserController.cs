@@ -57,7 +57,7 @@ namespace Web.Controllers
             try
             {
                 var createdUser = await _userService.CreateWithoutEmailVerification(userDto);
-                return Ok("Se creo exitosamente.");
+                return Ok(createdUser);
             }
             catch (ArgumentException ex)
             {
