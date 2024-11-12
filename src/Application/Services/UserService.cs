@@ -100,8 +100,8 @@ namespace Application.Services
         {
             var user = await _userRepository.GetByEmailAsync(email) ?? throw new ArgumentException("Email not found");
             var token = _verificationTokenService.GenerateVerificationToken(email);
-            var resetLink = $"https://localhost:7037/api/Register/resetPassword?token={token}";
-            var body = $"Click here to reset your password: <a href='{resetLink}'>Reset Password</a>";
+            var resetLink = $"http://localhost:5173/newresetpassword?token={token}";
+            var body = $"Click aqui para resetear su contraseña : <a href='{resetLink}'>Reset Password</a>";
             await _emailService.SendEmailAsync(email, "Password Reset Request", body);
 
             var userDto = new CreateUserDto
