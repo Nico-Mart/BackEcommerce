@@ -57,7 +57,7 @@ namespace Application.Services
             await _emailService.SendEmailAsync(userDto.Email, "Verifique su Cuenta",
                 "<h3>Verifique su Cuenta</h3>" +
                 "<p>Por favor verifique su cuenta haciendo clic en el enlace a continuación:</p>" +
-                $"<a href='https://localhost:7037/api/User/verify?token={token}' style='color:#007BFF; text-decoration:none;'>Verificar cuenta</a>");
+                $"<a href='https://localhost:7037/confirmAccount/{token}' style='color:#007BFF; text-decoration:none;'>Verificar cuenta</a>");
 
             return new ReadUserDto { Email = userDto.Email, FirstName = userDto.FirstName };
         }
